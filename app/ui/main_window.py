@@ -21,10 +21,6 @@ from app.ui.widgets.sidebar_panels import TextInputPanel, HistoryPanel, HelpPane
 from app.ui.widgets.animations import LoadingSpinner, ProgressOverlay, ToastNotification, AnimatedProgressBar
 from app.ui.ribbons.scanner_tab import setup_scanner_tab
 from app.ui.ribbons.editor_tab import setup_editor_tab
-from app.ui.ribbons.ai_tab import setup_ai_tab
-from app.ui.ribbons.annotate_tab import setup_annotate_tab
-from app.ui.ribbons.layout_tab import setup_layout_tab
-from app.ui.ribbons.library_tab import setup_library_tab
 
 class ScannerApp(ctk.CTk):
     def __init__(self):
@@ -92,27 +88,23 @@ class ScannerApp(ctk.CTk):
                                    text_color=COLORS["primary"])
         title_label.pack(side="left", padx=(0, 20))
 
-        # Tabs Container with colorful tabs
+        # Tabs Container - Simplified to 2 tabs only
         self.nav_buttons = {}
-        tabs = [("scanner", "Home"), ("editor", "Edit"), ("ai", "AI Tools"), ("annotate", "Annotate"), ("layout", "Layout"), ("library", "Library")]
+        tabs = [("scanner", "Home"), ("editor", "Edit")]
         tab_colors = {
             "scanner": COLORS["accent_fuchsia"],
-            "editor": COLORS["accent_orange"],
-            "ai": COLORS["accent_violet"],
-            "annotate": COLORS["accent_lime"],
-            "layout": COLORS["accent_sky"],
-            "library": COLORS["accent_teal"]
+            "editor": COLORS["accent_orange"]
         }
         
         def make_cmd(tid):
             return lambda: self.switch_tab(tid)
 
         for tab_id, text in tabs:
-            btn = ctk.CTkButton(self.header_bar, text=text, width=80, height=32, corner_radius=6,
+            btn = ctk.CTkButton(self.header_bar, text=text, width=100, height=36, corner_radius=6,
                                command=make_cmd(tab_id),
                                fg_color="transparent", text_color=COLORS["primary"],
-                               hover_color=tab_colors[tab_id], font=("Segoe UI", 13))
-            btn.pack(side="left", padx=2)
+                               hover_color=tab_colors[tab_id], font=("Segoe UI", 14, "bold"))
+            btn.pack(side="left", padx=5)
             self.nav_buttons[tab_id] = btn
             # Store the tab color for later use
             btn.tab_color = tab_colors[tab_id]
@@ -202,16 +194,12 @@ class ScannerApp(ctk.CTk):
 
         # Initialize Ribbon Panels
         self.ribbon_panels = {}
-        for tab_id in ["scanner", "editor", "ai", "annotate", "layout", "library"]:
+        for tab_id in ["scanner", "editor"]:
             self.ribbon_panels[tab_id] = ctk.CTkFrame(self.ribbon_content, fg_color="transparent")
         
         # Setup each tab's content
         setup_scanner_tab(self, self.ribbon_panels["scanner"])
         setup_editor_tab(self, self.ribbon_panels["editor"])
-        setup_ai_tab(self, self.ribbon_panels["ai"])
-        setup_annotate_tab(self, self.ribbon_panels["annotate"])
-        setup_layout_tab(self, self.ribbon_panels["layout"])
-        setup_library_tab(self, self.ribbon_panels["library"])
         
         self.switch_tab("scanner")
         
@@ -885,24 +873,84 @@ class ScannerApp(ctk.CTk):
         self.select_page(len(self.pages)-1)
 
     # --- Library / Export ---
+    def get_unique_filepath(self, folder, filename):
+        """Helper to get a unique filename by appending (n) if file exists"""
+        name, ext = os.path.splitext(filename)
+        counter = 1
+        unique_path = os.path.join(folder, filename)
+        
+        while os.path.exists(unique_path):
+            unique_path = os.path.join(folder, f"{name} ({counter}){ext}")
+            counter += 1
+            
+        return unique_path
+
     def save_as_image(self):
         if self.current_page_index == -1: return
         folder = self.output_dir.get()
         if not os.path.exists(folder): os.makedirs(folder)
-        path = os.path.join(folder, f"{self.filename_prefix.get()}_{self.current_page_index+1}.jpg")
-        self.pages[self.current_page_index]['processed'].save(path, "JPEG")
-        self.db_service.add_scan_history(os.path.basename(path), path, "JPEG", 1, os.path.getsize(path))
-        messagebox.showinfo("Saved", f"Saved to {path}")
+        
+        # Original logic: {prefix}_{page_index}.jpg
+        # Let's make it auto-unique too just in case
+        base_name = f"{self.filename_prefix.get()}_{self.current_page_index+1}.jpg"
+        path = self.get_unique_filepath(folder, base_name)
+        
+        try:
+            self.pages[self.current_page_index]['processed'].save(path, "JPEG")
+            self.db_service.add_scan_history(os.path.basename(path), path, "JPEG", 1, os.path.getsize(path))
+            messagebox.showinfo("Saved", f"Image saved to:\n{os.path.basename(path)}")
+            self.show_toast("Image saved successfully", "success")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save image: {e}")
 
     def save_as_pdf(self):
-        if not self.pages: return
+        if not self.pages: 
+            messagebox.showwarning("No Pages", "No pages to save")
+            return
+            
         folder = self.output_dir.get()
         if not os.path.exists(folder): os.makedirs(folder)
-        path = os.path.join(folder, f"{self.filename_prefix.get()}.pdf")
-        imgs = [p['processed'].convert("RGB") for p in self.pages]
-        imgs[0].save(path, "PDF", save_all=True, append_images=imgs[1:])
-        self.db_service.add_scan_history(os.path.basename(path), path, "PDF", len(self.pages), os.path.getsize(path))
-        messagebox.showinfo("Saved", f"PDF saved to {path}")
+        
+        base_name = f"{self.filename_prefix.get()}.pdf"
+        path = self.get_unique_filepath(folder, base_name)
+        
+        self.show_loading("Saving PDF...")
+        
+        def run_save():
+            try:
+                # Convert all to RGB for PDF compatibility
+                imgs = []
+                for p in self.pages:
+                    if p['processed'].mode == 'RGBA':
+                        imgs.append(p['processed'].convert('RGB'))
+                    else:
+                        imgs.append(p['processed'])
+                
+                if not imgs: return
+                
+                imgs[0].save(path, "PDF", save_all=True, append_images=imgs[1:])
+                
+                # Add to history
+                try:
+                    self.db_service.add_scan_history(os.path.basename(path), path, "PDF", len(self.pages), os.path.getsize(path))
+                except: pass
+                
+                self.after(0, lambda: self._on_save_pdf_success(path))
+            except Exception as e:
+                self.after(0, lambda: self._on_save_pdf_error(str(e)))
+        
+        threading.Thread(target=run_save, daemon=True).start()
+
+    def _on_save_pdf_success(self, path):
+        self.hide_loading()
+        messagebox.showinfo("Saved", f"PDF saved successfully as:\n{os.path.basename(path)}")
+        self.show_toast("PDF saved successfully", "success")
+        self.log_status(f"Saved: {os.path.basename(path)}")
+
+    def _on_save_pdf_error(self, error_msg):
+        self.hide_loading()
+        messagebox.showerror("Error", f"Failed to save PDF: {error_msg}")
+        self.show_toast("Failed to save PDF", "error")
 
     def show_scan_history(self):
         panel = HistoryPanel(self.sidebar_content, self.db_service, close_callback=self.show_thumbnails)

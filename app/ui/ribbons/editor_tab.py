@@ -1,8 +1,11 @@
+import tkinter as tk
 import customtkinter as ctk
 from app.core.constants import COLORS, FONTS
 from app.ui.widgets.common import create_ribbon_group, RibbonButton, LargeRibbonButton
 
 def setup_editor_tab(app, panel):
+    # ==================== EDITOR TOOLS ====================
+    
     # 1. History Group (Undo / Redo)
     hist_grp = create_ribbon_group(panel, "History")
     app.undo_btn = LargeRibbonButton(hist_grp, "↶", "Undo", command=app.undo, 
@@ -61,3 +64,134 @@ def setup_editor_tab(app, panel):
     app.resize_btn = LargeRibbonButton(ops_grp, "📏", "Resize", command=app.resize_to_paper_size, 
                                       fg_color=COLORS["accent_teal"], text_color="white")
     app.resize_btn.pack(side="left", padx=4)
+
+    # ==================== FROM AI TAB ====================
+
+    cv_grp = create_ribbon_group(panel, "AI Enhancement")
+    
+    # Perspective
+    app.ai_persp_btn = LargeRibbonButton(cv_grp, "📐", "Perspective", command=app.perspective_fix, 
+                                        fg_color=COLORS["accent_violet"], text_color="white")
+    app.ai_persp_btn.pack(side="left", padx=3)
+    
+    # Clean
+    app.ai_clean_btn = LargeRibbonButton(cv_grp, "📝", "Clean Doc", command=app.clean_document, 
+                                        fg_color=COLORS["accent_lime"], text_color="white")
+    app.ai_clean_btn.pack(side="left", padx=3)
+    
+    # Privacy
+    app.ai_blur_btn = LargeRibbonButton(cv_grp, "🕵️", "Privacy", command=app.privacy_blur, 
+                                       fg_color=COLORS["accent_fuchsia"], text_color="white")
+    app.ai_blur_btn.pack(side="left", padx=3)
+    
+    # Straighten
+    app.ai_straight_btn = LargeRibbonButton(cv_grp, "📐", "Straighten", command=app.auto_straighten, 
+                                           fg_color=COLORS["accent_sky"], text_color="white")
+    app.ai_straight_btn.pack(side="left", padx=3)
+
+    # OpenAI Group
+    openai_grp = create_ribbon_group(panel, "OpenAI Intelligence")
+    
+    # Settings
+    app.ai_settings_btn = LargeRibbonButton(openai_grp, "⚙️", "Settings", command=app.open_openai_settings,
+                                           fg_color=COLORS["text_light"], text_color="white")
+    app.ai_settings_btn.pack(side="left", padx=3)
+
+    # OCR
+    app.ai_ocr_btn = LargeRibbonButton(openai_grp, "📝", "OCR Text", command=app.perform_ocr,
+                                      fg_color=COLORS["accent_lime"], text_color="white")
+    app.ai_ocr_btn.pack(side="left", padx=3)
+
+    # Smart Rename
+    app.ai_rename_btn = LargeRibbonButton(openai_grp, "🏷️", "Rename", command=app.perform_smart_rename,
+                                         fg_color=COLORS["accent_sky"], text_color="white")
+    app.ai_rename_btn.pack(side="left", padx=3)
+
+    # Analyze
+    app.ai_analyze_btn = LargeRibbonButton(openai_grp, "📊", "Analyze", command=app.perform_analysis,
+                                          fg_color=COLORS["accent_violet"], text_color="white")
+    app.ai_analyze_btn.pack(side="left", padx=3)
+
+    # Chat
+    app.ai_chat_btn = LargeRibbonButton(openai_grp, "💬", "Chat AI", command=app.open_chat_window,
+                                       fg_color=COLORS["accent_fuchsia"], text_color="white")
+    app.ai_chat_btn.pack(side="left", padx=3)
+
+    # ==================== FROM ANNOTATE TAB ====================
+    
+    # 1. Text Group
+    text_grp = create_ribbon_group(panel, "Text Content")
+    app.add_text_btn = LargeRibbonButton(text_grp, "➕", "Add Text", command=app.open_text_dialog,
+                                        fg_color=COLORS["accent_violet"], text_color="white")
+    app.add_text_btn.pack(side="left", padx=5)
+    
+    # 2. Watermark Group
+    wm_grp = create_ribbon_group(panel, "Watermark / Stamp")
+    
+    # Selection Controls
+    sel_col = ctk.CTkFrame(wm_grp, fg_color="transparent")
+    sel_col.pack(side="left", padx=5)
+    
+    ctk.CTkLabel(sel_col, text="Text", font=FONTS["small"], text_color="white").pack(anchor="w")
+    app.watermark_text = tk.StringVar(value="COPY")
+    ctk.CTkOptionMenu(sel_col, variable=app.watermark_text, 
+                      values=["COPY", "DRAFT", "CONFIDENTIAL", "APPROVED", "SAMPLE", "VOID", "ORIGINAL"],
+                      width=110, height=28, font=FONTS["small"]).pack(pady=(0, 5))
+    
+    ctk.CTkLabel(sel_col, text="Position", font=FONTS["small"], text_color="white").pack(anchor="w")
+    app.watermark_position = tk.StringVar(value="center")
+    ctk.CTkOptionMenu(sel_col, variable=app.watermark_position, 
+                      values=["center", "top-right", "bottom-right", "top-left", "bottom-left"],
+                      width=110, height=28, font=FONTS["small"]).pack()
+                      
+    # Apply
+    app.apply_wm_btn = LargeRibbonButton(wm_grp, "🏷️", "Apply Stamp", command=app.apply_watermark,
+                                        fg_color=COLORS["accent_orange"], text_color="white")
+    app.apply_wm_btn.pack(side="left", padx=10)
+
+    # ==================== FROM LAYOUT TAB ====================
+    
+    # 1. Book Tools
+    book_grp = create_ribbon_group(panel, "Book & Duplex")
+    
+    app.split_btn = LargeRibbonButton(book_grp, "📖", "Split Page", command=app.split_current_page,
+                                     fg_color=COLORS["accent_sky"], text_color="white")
+    app.split_btn.pack(side="left", padx=3)
+    
+    app.reverse_btn = LargeRibbonButton(book_grp, "🔄", "Reverse", command=app.reverse_pages,
+                                       fg_color=COLORS["accent_violet"], text_color="white")
+    app.reverse_btn.pack(side="left", padx=3)
+
+    # 2. Collage Group
+    grid_grp = create_ribbon_group(panel, "Collage & Grid")
+    
+    # Layout Selector
+    sel_col = ctk.CTkFrame(grid_grp, fg_color="transparent")
+    sel_col.pack(side="left", padx=5)
+    
+    ctk.CTkLabel(sel_col, text="Grid Layout", font=FONTS["small"], text_color="white").pack(anchor="w")
+    app.grid_layout_var = ctk.StringVar(value="2x2")
+    ctk.CTkOptionMenu(sel_col, variable=app.grid_layout_var,
+                      values=["1x2", "2x1", "2x2", "3x2", "2x3", "3x3", "4x4"],
+                      width=100, height=28, font=FONTS["small"]).pack(pady=5)
+    
+    app.collage_btn = LargeRibbonButton(grid_grp, "🖼️", "Create Grid", command=app.create_collage_grid,
+                                       fg_color=COLORS["accent_lime"], text_color="white")
+    app.collage_btn.pack(side="left", padx=10)
+
+    # ==================== FROM LIBRARY TAB ====================
+    
+    # 1. Archives Group
+    lib_grp = create_ribbon_group(panel, "Library")
+    
+    app.view_hist_btn = LargeRibbonButton(lib_grp, "📜", "History", command=app.show_scan_history,
+                                         fg_color=COLORS["accent_violet"], text_color="white")
+    app.view_hist_btn.pack(side="left", padx=5)
+    
+    app.open_folder_btn = LargeRibbonButton(lib_grp, "📂", "Open Folder", command=app.open_output_folder,
+                                           fg_color=COLORS["accent_orange"], text_color="white")
+    app.open_folder_btn.pack(side="left", padx=5)
+    
+    app.clear_hist_btn = LargeRibbonButton(lib_grp, "🗑️", "Clear Logs", command=app.clear_history_confirm,
+                                          fg_color=COLORS["danger"], text_color="white")
+    app.clear_hist_btn.pack(side="left", padx=5)

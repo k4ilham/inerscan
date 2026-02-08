@@ -14,9 +14,10 @@
 ✨ **Clean Blue & White Theme** - Professional color scheme  
 🎬 **Loading & Animations** - Smooth spinners, progress bars, and toast notifications  
 📦 **Windows Installer** - Professional Inno Setup installer  
-🚀 **Improved Build System** - Automated build pipeline  
+🚀 **Streamlined UI** - Simplified to just **Home** and **Edit** tabs for better workflow  
+🔢 **Auto-Numbering Save** - Automatically handles duplicate filenames (e.g., `Scan (1).pdf`)  
 📚 **Complete Documentation** - Comprehensive guides for users and developers  
-🔧 **Bug Fixes** - Fixed database and scanner permission issues for installed apps  
+🔧 **Bug Fixes** - Fixed database and scanner permission issues  
 💾 **Smart Data Storage** - Database and temp files now stored in user AppData folder  
 
 ---
@@ -24,56 +25,37 @@
 ## ✨ Features Overview
 
 ### 🎨 **Modern Clean Blue & White UI**
-- **Professional Theme** - Clean blue and white color scheme for a professional look
+- **Professional Theme** - Clean blue and white color scheme
+- **Simplified Navigation** - Just two powerful tabs: **Home** (Scanning) and **Edit** (All Tools)
 - **Smooth Animations** - Loading spinners, progress bars, and toast notifications
-- **Ribbon Interface** - Organized features into logical tabs: Home, Edit, AI Tools, Annotate, Layout, and Library
 - **Responsive Design** - Intuitive layout with clear visual hierarchy
-- **Large Action Icons** - High-visibility buttons for the most common tasks
+
+### 🏠 **Home Tab (Scanning)**
+- **🔴 One-Click Scan** - Fast document scanning with WIA support
+- **📚 Batch Mode** - Scan multiple pages continuously
+- **📄 Export Options** - Save as PDF (Auto-numbering supported) or Image
+- **⚙️ Paper Settings** - A4, Letter, Legal, and Custom sizes
+- **👁️ Preview & Zoom** - Inspect scans in detail before saving
+
+### ✏️ **Edit Tab (All-in-One Tools)**
+- **🧠 AI & Intelligence**
+  - **Perspective Fix** - Auto-correct skewed documents
+  - **OCR Text** - Extract text from images
+  - **Smart Rename** - AI-suggested filenames
+  - **Chat AI** - Ask questions about your documents
+- **🎨 Image Adjustments**
+  - **Transform** - Rotate, Flip, Crop
+  - **Adjust** - Brightness, Contrast, Grayscale
+- **✨ Annotate & Layout**
+  - **Text & Watermark** - Add stamps like COPY, DRAFT
+  - **Book Tools** - Split pages, create collages
+- **📚 Library**
+  - **History Management** - View and manage scan logs
 
 ### 🎬 **Loading & Animations**
-- **🔄 Loading Spinner** - Animated spinner for ongoing operations
-- **📊 Animated Progress Bar** - Smooth progress transitions with ease-out animation
-- **🔔 Toast Notifications** - Slide-in notifications for all operations:
-  - Info (blue) - General information
-  - Success (green) - Successful operations
-  - Warning (yellow) - Warnings and alerts
-  - Error (red) - Error messages
-- **⏳ Progress Overlay** - Full-screen loading for long operations
-- **✨ Smooth Transitions** - Enhanced user experience with visual feedback
-
-### 🧠 **OpenAI Integration & AI Features**
-- **💬 AI Chat Assistant** - Chat with your documents directly in the sidebar
-- **📝 OCR Text Extraction** - Convert scanned images to editable text
-- **🤖 Smart Rename** - AI automatically suggests filenames based on content
-- **📊 Document Analysis** - Summarize and extract key data instantly
-- **🎯 AI Enhancement** - Perspective correction, document cleaning, and more
-
-### 📝 **Annotation & Watermark**
-- **✍️ Add Text** - Overlay custom text onto your scans
-- **🏷️ Watermarks** - Apply stamps like COPY, DRAFT, CONFIDENTIAL, etc.
-- **📍 Position Control** - Place watermarks at various positions
-- **🎨 Interactive Help** - Step-by-step voice-guided tour of features
-
-### 🖼️ **Advanced Scanning & Editing**
-- **📷 WIA Scanner Support** - Native Windows Image Acquisition integration
-- **🚀 Batch Mode** - Automatic multi-page batch processing
-- **🔄 Undo & Redo** - Full state management for every page
-- **🔍 Zoom & Pan** - Inspect fine details with the zoom slider
-- **✂️ Interactive Crop** - Precision cropping tool
-- **🎨 Image Adjustments** - Brightness, contrast, grayscale, rotation, flip
-- **📐 Resize Tool** - Resize images with custom dimensions
-
-### 📚 **Layout & Organization**
-- **📖 Book Tools** - Split pages, reverse order for book scanning
-- **🎯 Grid Creation** - Create photo grids and collages
-- **🔢 Multi-page Management** - Organize and reorder pages easily
-- **👁️ Thumbnail View** - Quick navigation through scanned pages
-
-### 💾 **File Management**
-- **📄 Multi-Format Export** - Save as high-quality JPEG or multi-page PDF
-- **📜 Scan History** - Persistent track record of all your files
-- **📁 Folder Browser** - Quick access to saved documents
-- **🗑️ Clear Logs** - Maintain system cleanliness
+- **🔄 Loading Spinner** - Visual feedback for operations
+- **🔔 Toast Notifications** - Info, Success, Warning, Error messages
+- **⏳ Progress Overlay** - For long tasks like PDF generation
 
 ---
 
@@ -443,18 +425,16 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🔄 Changelog
 
 ### v3.1 (2026-02-08)
-- ✨ New clean blue & white theme
-- 🎬 Added loading animations and toast notifications
-- 📦 Professional Windows installer
-- 🚀 Improved build system
-- 📚 Complete documentation
-- 🐛 Bug fixes:
-  - Fixed database permission issues (now stored in AppData)
-  - Fixed scanner temp file access errors
-  - Improved error messages for scanner issues
-  - Better error handling throughout the application
-- 💾 Smart data storage in user AppData folder
-- 🔧 Enhanced WIA scanner error handling
+- ✨ **New Clean Blue & White Theme**
+- 🚀 **UI Overhaul**: Simplified to **Home** and **Edit** tabs
+- 🔢 **Feature**: Auto-numbering for PDF & Image saves
+- 📦 **Professional Windows Installer**
+- 🎬 **Animations**: Loading spinners, toast notifications, progress bars
+- 🐛 **Bug Fixes**:
+  - Database stored in `%APPDATA%` to fix permission errors
+  - Scanner temp files handling improved
+  - Better error messages and handling
+- � **Documentation**: Complete guides included in installer
 
 ### v3.0 (Previous)
 - 🎨 Modern Shadcn-style UI
