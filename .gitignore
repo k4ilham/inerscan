@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+env/
+.venv/
+
+# VS Code
+.vscode/
+
+# Temporary Files
+temp_scan.png
+*.log
+*.tmp
+
+# User Specific
+.idea/
