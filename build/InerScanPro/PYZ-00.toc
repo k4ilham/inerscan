@@ -103,6 +103,14 @@
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\PIL\\ImageColor.py',
    'PYMODULE'),
+  ('PIL.ImageDraw',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\PIL\\ImageDraw.py',
+   'PYMODULE'),
+  ('PIL.ImageDraw2',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\PIL\\ImageDraw2.py',
+   'PYMODULE'),
   ('PIL.ImageEnhance',
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\PIL\\ImageEnhance.py',
@@ -114,6 +122,10 @@
   ('PIL.ImageFilter',
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\PIL\\ImageFilter.py',
+   'PYMODULE'),
+  ('PIL.ImageFont',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\PIL\\ImageFont.py',
    'PYMODULE'),
   ('PIL.ImageMath',
    'C:\\inercorp\\aplikasi '
@@ -130,6 +142,10 @@
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\PIL\\ImagePalette.py',
    'PYMODULE'),
+  ('PIL.ImagePath',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\PIL\\ImagePath.py',
+   'PYMODULE'),
   ('PIL.ImageQt',
    'C:\\inercorp\\aplikasi scanner\\venv\\Lib\\site-packages\\PIL\\ImageQt.py',
    'PYMODULE'),
@@ -144,6 +160,10 @@
   ('PIL.ImageStat',
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\PIL\\ImageStat.py',
+   'PYMODULE'),
+  ('PIL.ImageText',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\PIL\\ImageText.py',
    'PYMODULE'),
   ('PIL.ImageTk',
    'C:\\inercorp\\aplikasi scanner\\venv\\Lib\\site-packages\\PIL\\ImageTk.py',
@@ -532,6 +552,22 @@
   ('comtypes.errorinfo',
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\comtypes\\errorinfo.py',
+   'PYMODULE'),
+  ('comtypes.gen',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\comtypes\\gen\\__init__.py',
+   'PYMODULE'),
+  ('comtypes.gen.SpeechLib',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\comtypes\\gen\\SpeechLib.py',
+   'PYMODULE'),
+  ('comtypes.gen._00020430_0000_0000_C000_000000000046_0_2_0',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\comtypes\\gen\\_00020430_0000_0000_C000_000000000046_0_2_0.py',
+   'PYMODULE'),
+  ('comtypes.gen._C866CA3A_32F7_11D2_9602_00C04F8EE628_0_5_4',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\comtypes\\gen\\_C866CA3A_32F7_11D2_9602_00C04F8EE628_0_5_4.py',
    'PYMODULE'),
   ('comtypes.hresult',
    'C:\\inercorp\\aplikasi '
@@ -1258,6 +1294,10 @@
   ('numpy.core._utils',
    'C:\\inercorp\\aplikasi '
    'scanner\\venv\\Lib\\site-packages\\numpy\\core\\_utils.py',
+   'PYMODULE'),
+  ('numpy.core.multiarray',
+   'C:\\inercorp\\aplikasi '
+   'scanner\\venv\\Lib\\site-packages\\numpy\\core\\multiarray.py',
    'PYMODULE'),
   ('numpy.ctypeslib',
    'C:\\inercorp\\aplikasi '

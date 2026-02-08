@@ -5,3 +5,4 @@ numpy
 pyinstaller
 pyttsx3
 opencv-python-headless
+openai

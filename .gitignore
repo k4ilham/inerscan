@@ -18,3 +18,9 @@ temp_scan.png
 
 # User Specific
 .idea/
+
+# Database / Secrets - DO NOT COMMIT
+*.db
+settings.db
+.env
+secret.key
