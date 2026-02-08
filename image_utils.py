@@ -216,3 +216,232 @@ class ImageProcessor:
                     idx += 1
         
         return grid
+
+    @staticmethod
+    def deskew_image(pil_image):
+        """
+        Automatically detects and corrects the skew/tilt of an image.
+        Uses contour detection and minimum area rectangle for high accuracy.
+        
+        Args:
+            pil_image: PIL Image to deskew
+            
+        Returns:
+            PIL Image that has been straightened
+        """
+        import cv2
+        
+        # Convert PIL to numpy array
+        img_array = np.array(pil_image)
+        
+        # Convert to grayscale
+        if len(img_array.shape) == 3:
+            gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        else:
+            gray = img_array
+        
+        # Apply Gaussian blur to reduce noise
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+        
+        # Apply adaptive threshold for better edge detection
+        thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                       cv2.THRESH_BINARY_INV, 11, 2)
+        
+        # Find contours
+        contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours:
+            # Try regular Canny edge detection as fallback
+            edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+            contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
+        if not contours:
+            return pil_image
+        
+        # Find the largest contour (assuming it's the main object/document)
+        largest_contour = max(contours, key=cv2.contourArea)
+        
+        # Get minimum area rectangle
+        rect = cv2.minAreaRect(largest_contour)
+        angle = rect[2]
+        
+        # Normalize angle
+        # minAreaRect returns angle in range [-90, 0)
+        # We need to adjust it to get the correct rotation
+        if angle < -45:
+            angle = 90 + angle
+        
+        # Only apply correction if angle is significant (> 0.3 degrees)
+        if abs(angle) < 0.3:
+            return pil_image
+        
+        # Get image dimensions
+        h, w = gray.shape
+        
+        # Calculate rotation matrix
+        center = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        
+        # Calculate new bounding dimensions
+        cos = np.abs(M[0, 0])
+        sin = np.abs(M[0, 1])
+        new_w = int((h * sin) + (w * cos))
+        new_h = int((h * cos) + (w * sin))
+        
+        # Adjust rotation matrix for new center
+        M[0, 2] += (new_w / 2) - center[0]
+        M[1, 2] += (new_h / 2) - center[1]
+        
+        # Rotate the image
+        rotated = cv2.warpAffine(img_array, M, (new_w, new_h), 
+                                 borderMode=cv2.BORDER_CONSTANT,
+                                 borderValue=(255, 255, 255))
+        
+        # Convert back to PIL
+        if len(img_array.shape) == 3:
+            corrected = Image.fromarray(rotated)
+        else:
+            corrected = Image.fromarray(rotated).convert('L')
+        
+        return corrected
+
+    @staticmethod
+    def auto_straighten_simple(pil_image):
+        """
+        Simpler straightening method that works without OpenCV.
+        Uses projection profile method to detect text orientation.
+        
+        Args:
+            pil_image: PIL Image to straighten
+            
+        Returns:
+            PIL Image rotated to the best angle
+        """
+        # Convert to grayscale
+        if pil_image.mode == 'RGBA':
+            # Convert RGBA to RGB first
+            bg = Image.new('RGB', pil_image.size, 'white')
+            bg.paste(pil_image, mask=pil_image.split()[3])
+            img = bg.convert('L')
+        elif pil_image.mode != 'L':
+            img = pil_image.convert('L')
+        else:
+            img = pil_image
+        
+        # Try angles from -10 to +10 degrees
+        best_angle = 0
+        best_score = 0
+        
+        for angle in range(-10, 11, 1):
+            # Rotate image
+            rotated = img.rotate(angle, expand=False, fillcolor=255)
+            img_array = np.array(rotated)
+            
+            # Calculate horizontal projection (sum of black pixels per row)
+            projection = np.sum(255 - img_array, axis=1)
+            
+            # Score is variance of projection (higher = more aligned text)
+            score = np.var(projection)
+            
+            if score > best_score:
+                best_score = score
+                best_angle = angle
+        
+        # Apply best rotation to original image
+        if best_angle != 0:
+            return pil_image.rotate(best_angle, expand=True, fillcolor='white')
+        else:
+            return pil_image
+
+    @staticmethod
+    def add_watermark(pil_image, text="COPY", position="center", 
+                     opacity=128, rotation=-45, font_size=None, color=(255, 0, 0)):
+        """
+        Add a watermark/stamp to the image.
+        
+        Args:
+            pil_image: PIL Image to add watermark to
+            text: Watermark text (e.g., "COPY", "DRAFT", "CONFIDENTIAL")
+            position: Position of watermark - "center", "top-right", "bottom-right", "diagonal"
+            opacity: Transparency 0-255 (0=invisible, 255=opaque)
+            rotation: Rotation angle in degrees (negative for counter-clockwise)
+            font_size: Font size in pixels (auto-calculated if None)
+            color: RGB color tuple
+            
+        Returns:
+            PIL Image with watermark
+        """
+        from PIL import ImageDraw, ImageFont
+        
+        # Create a copy to avoid modifying original
+        img = pil_image.copy()
+        
+        # Ensure RGB mode
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Calculate font size if not provided (proportional to image size)
+        if font_size is None:
+            font_size = int(min(img.size) * 0.15)  # 15% of smaller dimension
+        
+        # Create overlay layer
+        overlay = Image.new('RGBA', img.size, (255, 255, 255, 0))
+        draw = ImageDraw.Draw(overlay)
+        
+        # Try to load a bold font, fallback to default
+        try:
+            # Try common Windows fonts
+            font = ImageFont.truetype("arialbd.ttf", font_size)
+        except:
+            try:
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except:
+                # Fallback to default
+                font = ImageFont.load_default()
+        
+        # Get text bounding box
+        bbox = draw.textbbox((0, 0), text, font=font)
+        text_width = bbox[2] - bbox[0]
+        text_height = bbox[3] - bbox[1]
+        
+        # Calculate position
+        if position == "center":
+            x = (img.width - text_width) // 2
+            y = (img.height - text_height) // 2
+        elif position == "top-right":
+            x = img.width - text_width - 50
+            y = 50
+        elif position == "bottom-right":
+            x = img.width - text_width - 50
+            y = img.height - text_height - 50
+        elif position == "top-left":
+            x = 50
+            y = 50
+        elif position == "bottom-left":
+            x = 50
+            y = img.height - text_height - 50
+        else:  # diagonal (multiple watermarks)
+            position = "center"
+            x = (img.width - text_width) // 2
+            y = (img.height - text_height) // 2
+        
+        # Create text with specified opacity
+        text_color = (*color, opacity)
+        
+        # Draw text on overlay
+        draw.text((x, y), text, font=font, fill=text_color)
+        
+        # Rotate overlay if needed
+        if rotation != 0:
+            overlay = overlay.rotate(rotation, expand=False, fillcolor=(255, 255, 255, 0))
+        
+        # Convert base image to RGBA for compositing
+        img_rgba = img.convert('RGBA')
+        
+        # Composite overlay onto image
+        watermarked = Image.alpha_composite(img_rgba, overlay)
+        
+        # Convert back to RGB
+        final = watermarked.convert('RGB')
+        
+        return final

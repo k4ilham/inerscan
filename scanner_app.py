@@ -65,6 +65,12 @@ class ScannerApp(ctk.CTk):
         # Tab state
         self.current_tab = "scanner"
 
+        # Batch scanning state
+        self.batch_scanning = False
+        self.batch_count = 0
+        self.batch_target = 0
+        self.batch_delay = 2000  # ms between scans
+
         self.init_ui()
 
     def init_ui(self):
@@ -96,15 +102,27 @@ class ScannerApp(ctk.CTk):
             btn.pack(side="left", padx=5)
             self.nav_buttons[tab_id] = btn
         
-        # Left Panel - Controls Card (Scanner Tab)
+        # Left Panel - Controls Card
         self.left_card = self._create_card(main, 320)
         self.left_card.grid(row=1, column=0, sticky="nsew", padx=(0, 10))
         
-        scroll = ctk.CTkScrollableFrame(self.left_card, fg_color="transparent")
-        scroll.pack(fill="both", expand=True, padx=15, pady=15)
+        self.scroll = ctk.CTkScrollableFrame(self.left_card, fg_color="transparent")
+        self.scroll.pack(fill="both", expand=True, padx=15, pady=15)
+        
+        # Create all sections (we'll show/hide based on tab)
+        self.create_scanner_controls()
+        self.create_editor_controls()
+        self.create_library_controls()
+        
+        # Show only scanner controls by default
+        self.show_tab_controls("scanner")
+
+    def create_scanner_controls(self):
+        """Create Scanner tab controls"""
+        self.scanner_frame = ctk.CTkFrame(self.scroll, fg_color="transparent")
         
         # Scan Button with Badge
-        scan_frame = ctk.CTkFrame(scroll, fg_color="transparent")
+        scan_frame = ctk.CTkFrame(self.scanner_frame, fg_color="transparent")
         scan_frame.pack(fill="x", pady=(0, 10))
         
         self.scan_btn = ctk.CTkButton(scan_frame, text="🚀 Start Scan", height=50, corner_radius=12,
@@ -112,7 +130,18 @@ class ScannerApp(ctk.CTk):
                                      font=("Segoe UI", 15, "bold"), command=self.perform_scan)
         self.scan_btn.pack(fill="x")
         
-        self.progress_bar = ctk.CTkProgressBar(scroll, height=8, corner_radius=4, 
+        # Batch Scan Button
+        self.batch_scan_btn = ctk.CTkButton(scan_frame, text="📚 Batch Scan", height=50, corner_radius=12,
+                                           fg_color="#10B981", hover_color="#059669",
+                                           font=("Segoe UI", 15, "bold"), command=self.start_batch_scan)
+        self.batch_scan_btn.pack(fill="x", pady=(10, 0))
+        
+        # Batch status label
+        self.batch_status = ctk.CTkLabel(scan_frame, text="", font=("Segoe UI", 10),
+                                        text_color=COLORS["text_light"])
+        self.batch_status.pack(pady=(5, 0))
+        
+        self.progress_bar = ctk.CTkProgressBar(self.scanner_frame, height=8, corner_radius=4, 
                                                progress_color=COLORS["success"])
         self.progress_bar.set(0)
         self.progress_bar.pack(fill="x", pady=(5, 20))
@@ -151,6 +180,7 @@ class ScannerApp(ctk.CTk):
         self._section_header(scroll, "🔧 Advanced")
         
         actions = [
+            ("📐 Auto-Straighten", self.auto_straighten, "#06B6D4"),
             ("✂️ Crop Tool", self.toggle_crop_mode, COLORS["warning"]),
             ("🧹 Remove Background", self.remove_white_bg, COLORS["secondary"]),
             ("📐 Auto Crop", self.perform_auto_crop, COLORS["success"])
@@ -162,6 +192,48 @@ class ScannerApp(ctk.CTk):
         self.gray_switch = ctk.CTkSwitch(scroll, text="⚫ Black & White", 
                                         command=self.toggle_grayscale, font=("Segoe UI", 12))
         self.gray_switch.pack(anchor="w", pady=(10, 20))
+        
+        # Watermark / Stamp Section
+        self._section_header(scroll, "🏷️ Watermark / Stamp")
+        
+        # Watermark text templates
+        self.watermark_text = tk.StringVar(value="COPY")
+        watermark_templates = ["COPY", "DRAFT", "CONFIDENTIAL", "APPROVED", 
+                              "SAMPLE", "VOID", "ORIGINAL", "Custom..."]
+        
+        watermark_menu = ctk.CTkOptionMenu(scroll, variable=self.watermark_text,
+                                          values=watermark_templates,
+                                          command=self.on_watermark_template_change,
+                                          height=38, corner_radius=10,
+                                          fg_color=COLORS["surface"], 
+                                          button_color="#DC2626",
+                                          button_hover_color="#B91C1C",
+                                          dropdown_fg_color=COLORS["surface"],
+                                          font=("Segoe UI", 12))
+        watermark_menu.pack(fill="x", pady=(0, 10))
+        
+        # Watermark position
+        self.watermark_position = tk.StringVar(value="center")
+        position_options = ["center", "top-right", "bottom-right", "top-left", "bottom-left"]
+        
+        position_menu = ctk.CTkOptionMenu(scroll, variable=self.watermark_position,
+                                         values=position_options,
+                                         height=38, corner_radius=10,
+                                         fg_color=COLORS["surface"],
+                                         button_color=COLORS["text_light"],
+                                         dropdown_fg_color=COLORS["surface"],
+                                         font=("Segoe UI", 11))
+        position_menu.pack(fill="x", pady=(0, 10))
+        
+        # Watermark opacity slider
+        self._slider_control(scroll, "💧 Opacity", self.update_watermark_preview)
+        self.watermark_opacity_slider = scroll.winfo_children()[-1]
+        self.watermark_opacity_slider.set(0.5)  # 50% opacity
+        
+        # Apply watermark button
+        ctk.CTkButton(scroll, text="🏷️ Add Watermark", command=self.apply_watermark,
+                     height=40, corner_radius=10, fg_color="#DC2626",
+                     hover_color="#B91C1C", font=("Segoe UI", 12, "bold")).pack(fill="x", pady=(0, 20))
         
         # Paper Size Section
         self._section_header(scroll, "📏 Paper Size")
@@ -270,6 +342,21 @@ class ScannerApp(ctk.CTk):
                                          height=45, corner_radius=12, fg_color=COLORS["primary"],
                                          font=("Segoe UI", 13, "bold"))
         self.save_pdf_btn.pack(fill="x", pady=(3, 20))
+        
+        # History & File Manager
+        self._section_header(scroll, "📂 History & Files")
+        
+        history_actions = [
+            ("📜 View Scan History", self.show_scan_history),
+            ("📁 Open File Location", self.open_output_folder),
+            ("🗑️ Clear History", self.clear_history_confirm)
+        ]
+        
+        for text, cmd in history_actions:
+            ctk.CTkButton(scroll, text=text, command=cmd, height=38, corner_radius=10,
+                         fg_color="transparent", border_width=2, border_color=COLORS["border"],
+                         text_color=COLORS["text"], hover_color=COLORS["bg_gradient_end"],
+                         font=("Segoe UI", 11)).pack(fill="x", pady=3)
         
         # About
         self._section_header(scroll, "ℹ️ About")
@@ -386,27 +473,8 @@ class ScannerApp(ctk.CTk):
             else:
                 btn.configure(fg_color="transparent", text_color=COLORS["text_light"])
         
-        # Show different content based on tab
-        if tab_id == "editor":
-            messagebox.showinfo("🎨 Editor Mode", 
-                              "Editor mode is active!\n\n"
-                              "You can now use all editing tools in the left sidebar:\n"
-                              "• Rotate, flip, crop\n"
-                              "• Adjust brightness & contrast\n"
-                              "• Remove background\n"
-                              "• Resize to paper sizes\n"
-                              "• Create photo grids\n\n"
-                              "Select a page from the right sidebar to edit.")
-        elif tab_id == "library":
-            if not self.pages:
-                messagebox.showinfo("📚 Library", 
-                                  "No scanned documents yet!\n\n"
-                                  "Switch back to Scanner tab and scan some documents first.")
-            else:
-                messagebox.showinfo("📚 Library", 
-                                  f"You have {len(self.pages)} page(s) in your library.\n\n"
-                                  "View all pages in the right sidebar.\n"
-                                  "Click any page to view and edit it.")
+        # Switch UI controls
+        self.show_tab_controls(tab_id)
 
     # Event Handlers (keeping existing logic)
     def log_status(self, msg):
@@ -443,6 +511,113 @@ class ScannerApp(ctk.CTk):
         finally:
             self.progress_bar.stop()
             self.progress_bar.set(0)
+
+    def start_batch_scan(self):
+        """Start batch scanning mode"""
+        if self.batch_scanning:
+            # Stop batch scanning
+            self.stop_batch_scan()
+            return
+        
+        # Dialog to configure batch scan
+        dialog = ctk.CTkInputDialog(
+            text="Batch Scan Settings\n\nEnter number of pages to scan:\n(Enter 0 for continuous until stopped)",
+            title="Batch Scan Setup"
+        )
+        result = dialog.get_input()
+        
+        if result is None:
+            return
+        
+        try:
+            num_pages = int(result)
+            if num_pages < 0:
+                raise ValueError("Must be 0 or positive")
+        except:
+            messagebox.showerror("Invalid Input", "Please enter a valid number (0 for continuous)")
+            return
+        
+        self.batch_target = num_pages
+        self.batch_count = 0
+        self.batch_scanning = True
+        
+        # Update UI
+        self.batch_scan_btn.configure(text="⏹️ Stop Batch", fg_color=COLORS["danger"])
+        self.scan_btn.configure(state="disabled")
+        
+        if num_pages == 0:
+            self.batch_status.configure(text="Continuous scan mode - Click Stop to end")
+            self.log_status("Batch scan started (continuous)")
+        else:
+            self.batch_status.configure(text=f"Scanning 0/{num_pages} pages...")
+            self.log_status(f"Batch scan started ({num_pages} pages)")
+        
+        # Start first scan
+        self.after(500, self.do_batch_scan)
+
+    def do_batch_scan(self):
+        """Perform one scan in batch mode"""
+        if not self.batch_scanning:
+            return
+        
+        # Check if we've reached target (if not continuous)
+        if self.batch_target > 0 and self.batch_count >= self.batch_target:
+            self.stop_batch_scan()
+            messagebox.showinfo("✅ Batch Complete", 
+                              f"Successfully scanned {self.batch_count} page(s)!")
+            return
+        
+        self.log_status(f"Scanning page {self.batch_count + 1}...")
+        
+        try:
+            new_img = self.scanner_service.scan_document()
+            if new_img:
+                page_data = {
+                    'original': new_img.copy(), 'processed': new_img.copy(),
+                    'rotation': 0, 'flip_h': False, 'flip_v': False,
+                    'brightness': 1.0, 'contrast': 1.0, 'grayscale': False
+                }
+                self.pages.append(page_data)
+                self.batch_count += 1
+                
+                # Update UI
+                self.select_page(len(self.pages) - 1)
+                self.save_img_btn.configure(state="normal")
+                self.save_pdf_btn.configure(state="normal")
+                self.delete_btn.configure(state="normal")
+                self.page_badge.configure(text=str(len(self.pages)))
+                
+                if self.batch_target == 0:
+                    self.batch_status.configure(text=f"Scanned {self.batch_count} pages (continuous)")
+                else:
+                    self.batch_status.configure(text=f"Scanning {self.batch_count}/{self.batch_target} pages...")
+                
+                self.log_status(f"Page {self.batch_count} added")
+                
+                # Schedule next scan
+                if self.batch_scanning:
+                    self.after(self.batch_delay, self.do_batch_scan)
+            else:
+                # User cancelled scan
+                self.stop_batch_scan()
+                self.log_status("Batch scan stopped by user")
+        
+        except Exception as e:
+            messagebox.showerror("Scan Error", f"Error during batch scan:\n{e}\n\nBatch scan stopped.")
+            self.stop_batch_scan()
+
+    def stop_batch_scan(self):
+        """Stop batch scanning"""
+        self.batch_scanning = False
+        self.batch_scan_btn.configure(text="📚 Batch Scan", fg_color="#10B981")
+        self.scan_btn.configure(state="normal")
+        
+        if self.batch_count > 0:
+            self.batch_status.configure(text=f"✅ Completed: {self.batch_count} pages scanned")
+            self.log_status(f"Batch scan completed - {self.batch_count} pages")
+        else:
+            self.batch_status.configure(text="")
+            self.log_status("Batch scan cancelled")
 
     def process_image(self):
         if self.current_page_index == -1: return
@@ -541,6 +716,138 @@ class ScannerApp(ctk.CTk):
             self.apply_crop()
         else:
             self.preview_canvas.delete("crop_rect")
+
+    def auto_straighten(self):
+        """Automatically straighten skewed/tilted images"""
+        if self.current_page_index == -1:
+            messagebox.showwarning("No Page", "Please scan a page first.")
+            return
+        
+        # Ask user preferences
+        response = messagebox.askyesnocancel(
+            "Auto-Straighten", 
+            "Automatically detect and fix image tilt?\n\n"
+            "• Yes = Straighten + Remove background + Auto crop\n"
+            "• No = Only straighten (keep background)\n"
+            "• Cancel = Abort"
+        )
+        
+        if response is None:  # Cancel
+            return
+        
+        auto_clean = response  # True = clean, False = keep background
+        
+        self.log_status("Analyzing image angle...")
+        
+        try:
+            img = self.pages[self.current_page_index]['processed']
+            
+            # Try OpenCV method first (more accurate)
+            try:
+                straightened = ImageProcessor.deskew_image(img)
+                method = "Edge Detection"
+            except Exception as e:
+                # Fallback to simple method (no OpenCV needed)
+                straightened = ImageProcessor.auto_straighten_simple(img)
+                method = "Projection Analysis"
+            
+            # Auto-clean if requested
+            if auto_clean:
+                self.log_status("Removing background...")
+                
+                # Remove white background
+                straightened = ImageProcessor.remove_white_background(straightened, threshold=240)
+                
+                # Auto crop to content
+                straightened = ImageProcessor.perform_auto_crop(straightened)
+                
+                method += " + Auto Clean"
+            
+            # Update the page
+            self.pages[self.current_page_index]['original'] = straightened
+            self.reset_edits(reload_ui=False)
+            self.process_image()
+            
+            self.log_status(f"✅ Image straightened ({method})")
+            
+            if auto_clean:
+                messagebox.showinfo("✅ Success", 
+                    f"Image has been straightened and cleaned!\n\n"
+                    f"Method: {method}\n"
+                    f"• Background removed\n"
+                    f"• Auto-cropped to content")
+            else:
+                messagebox.showinfo("✅ Success", f"Image has been straightened!\n\nMethod: {method}")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to straighten image:\n{e}")
+            self.log_status("Straighten failed")
+
+    def on_watermark_template_change(self, choice):
+        """Handle watermark template selection"""
+        if choice == "Custom...":
+            # Prompt for custom text
+            dialog = ctk.CTkInputDialog(
+                text="Enter custom watermark text:",
+                title="Custom Watermark"
+            )
+            custom_text = dialog.get_input()
+            
+            if custom_text:
+                self.watermark_text.set(custom_text)
+            else:
+                # Revert to COPY if cancelled
+                self.watermark_text.set("COPY")
+
+    def update_watermark_preview(self, value):
+        """Update watermark preview (could add live preview in future)"""
+        # For now, just store the value
+        pass
+
+    def apply_watermark(self):
+        """Apply watermark/stamp to current page"""
+        if self.current_page_index == -1:
+            messagebox.showwarning("No Page", "Please scan a page first.")
+            return
+        
+        text = self.watermark_text.get()
+        if not text or text == "Custom...":
+            messagebox.showwarning("No Text", "Please select or enter watermark text.")
+            return
+        
+        position = self.watermark_position.get()
+        opacity_percent = self.watermark_opacity_slider.get()
+        opacity = int(opacity_percent * 255)  # Convert 0-1 to 0-255
+        
+        self.log_status(f"Adding watermark: {text}...")
+        
+        try:
+            img = self.pages[self.current_page_index]['processed']
+            
+            # Add watermark
+            watermarked = ImageProcessor.add_watermark(
+                img, 
+                text=text,
+                position=position,
+                opacity=opacity,
+                rotation=-45,  # Diagonal watermark
+                color=(220, 38, 38)  # Red color
+            )
+            
+            # Update the page
+            self.pages[self.current_page_index]['original'] = watermarked
+            self.reset_edits(reload_ui=False)
+            self.process_image()
+            
+            self.log_status(f"✅ Watermark added: {text}")
+            messagebox.showinfo("✅ Success", 
+                              f"Watermark '{text}' has been added!\n\n"
+                              f"Position: {position}\n"
+                              f"Opacity: {int(opacity_percent * 100)}%")
+            
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to add watermark:\n{e}")
+            self.log_status("Watermark failed")
 
     def apply_crop(self):
         if not self.crop_start or not self.crop_end: return
@@ -886,6 +1193,151 @@ class ScannerApp(ctk.CTk):
             self.preview_canvas.create_text(400, 300, text="✅ Tour Complete!\nHappy Scanning",
                                           fill=COLORS["success"], font=("Segoe UI", 22, "bold"), justify="center")
             self.guide_service.speak("Tour complete!")
+
+    # History & File Manager Methods
+    def save_as_image(self):
+        """Save current page as image and record in history"""
+        if self.current_page_index == -1:
+            messagebox.showwarning("No Page", "Please scan a page first.")
+            return
+        
+        filename = f"{self.filename_prefix.get()}_{len(self.pages)}.jpg"
+        filepath = os.path.join(self.output_dir.get(), filename)
+        
+        try:
+            self.pages[self.current_page_index]['processed'].save(filepath, "JPEG", quality=95)
+            
+            # Add to history
+            file_size = os.path.getsize(filepath)
+            self.db_service.add_scan_history(
+                filename=filename,
+                filepath=filepath,
+                file_type="JPEG",
+                page_count=1,
+                file_size=file_size,
+                notes=f"Single page export"
+            )
+            
+            messagebox.showinfo("✅ Saved", f"Image saved:\n{filepath}")
+            self.log_status(f"Saved: {filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save image:\n{e}")
+
+    def save_as_pdf(self):
+        """Save all pages as PDF and record in history"""
+        if not self.pages:
+            messagebox.showwarning("No Pages", "Please scan some pages first.")
+            return
+        
+        filename = f"{self.filename_prefix.get()}.pdf"
+        filepath = os.path.join(self.output_dir.get(), filename)
+        
+        try:
+            images = [page['processed'].convert('RGB') for page in self.pages]
+            images[0].save(filepath, "PDF", save_all=True, append_images=images[1:])
+            
+            # Add to history
+            file_size = os.path.getsize(filepath)
+            self.db_service.add_scan_history(
+                filename=filename,
+                filepath=filepath,
+                file_type="PDF",
+                page_count=len(self.pages),
+                file_size=file_size,
+                notes=f"{len(self.pages)} pages combined"
+            )
+            
+            messagebox.showinfo("✅ Saved", f"PDF saved with {len(self.pages)} page(s):\n{filepath}")
+            self.log_status(f"PDF saved: {filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save PDF:\n{e}")
+
+    def show_scan_history(self):
+        """Show scan history window"""
+        history_window = ctk.CTkToplevel(self)
+        history_window.title("📜 Scan History")
+        history_window.geometry("800x600")
+        
+        # Header
+        header_frame = ctk.CTkFrame(history_window, fg_color=COLORS["primary"], height=60)
+        header_frame.pack(fill="x")
+        header_frame.pack_propagate(False)
+        
+        ctk.CTkLabel(header_frame, text="📜 Scan History", 
+                    font=("Segoe UI", 20, "bold"), text_color="white").pack(pady=15)
+        
+        # Content frame
+        content_frame = ctk. CTkScrollableFrame(history_window)
+        content_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        
+        # Get history from database
+        history = self.db_service.get_scan_history(limit=100)
+        
+        if not history:
+            ctk.CTkLabel(content_frame, text="No scan history yet.\n\nSave some scans to see them here!",
+                        font=("Segoe UI", 14), text_color=COLORS["text_light"]).pack(pady=50)
+            return
+        
+        # Display history items
+        for item in history:
+            self._create_history_item(content_frame, item)
+
+    def _create_history_item(self, parent, item):
+        """Create a history item widget"""
+        item_frame = ctk.CTkFrame(parent, fg_color=COLORS["surface"], 
+                                 border_width=1, border_color=COLORS["border"], corner_radius=10)
+        item_frame.pack(fill="x", pady=5)
+        
+        # Left side - info
+        info_frame = ctk.CTkFrame(item_frame, fg_color="transparent")
+        info_frame.pack(side="left", fill="both", expand=True, padx=15, pady=10)
+        
+        # Filename
+        ctk.CTkLabel(info_frame, text=item['filename'], font=("Segoe UI", 13, "bold"),
+                    anchor="w").pack(fill="x")
+        
+        # Details
+        file_size_mb = item['file_size'] / (1024 * 1024)
+        details = f"📄 {item['file_type']} | 📑 {item['page_count']} page(s) | 💾 {file_size_mb:.2f} MB"
+        ctk.CTkLabel(info_frame, text=details, font=("Segoe UI", 10),
+                    text_color=COLORS["text_light"], anchor="w").pack(fill="x")
+        
+        # Date
+        ctk.CTkLabel(info_frame, text=f"🕒 {item['scan_date']}", font=("Segoe UI", 9),
+                    text_color=COLORS["text_lighter"], anchor="w").pack(fill="x", pady=(3, 0))
+        
+        # Right side - actions
+        action_frame = ctk.CTkFrame(item_frame, fg_color="transparent")
+        action_frame.pack(side="right", padx=10, pady=10)
+        
+        # Open button
+        if os.path.exists(item['filepath']):
+            ctk.CTkButton(action_frame, text="📂 Open", width=80, height=30,
+                         command=lambda p=item['filepath']: os.startfile(p),
+                         fg_color=COLORS["primary"], corner_radius=8).pack(side="left", padx=3)
+            
+            ctk.CTkButton(action_frame, text="📁 Folder", width=80, height=30,
+                         command=lambda p=os.path.dirname(item['filepath']): os.startfile(p),
+                         fg_color=COLORS["secondary"], corner_radius=8).pack(side="left", padx=3)
+        else:
+            ctk.CTkLabel(action_frame, text="❌ File not found", 
+                        text_color=COLORS["danger"]).pack()
+
+    def open_output_folder(self):
+        """Open the output folder in file explorer"""
+        folder = self.output_dir.get()
+        if os.path.exists(folder):
+            os.startfile(folder)
+        else:
+            messagebox.showwarning("Not Found", f"Folder does not exist:\n{folder}")
+
+    def clear_history_confirm(self):
+        """Confirm and clear scan history"""
+        if messagebox.askyesno("Clear History", 
+                              "Clear all scan history?\n\nThis won't delete the actual files, only the history records."):
+            self.db_service.clear_scan_history()
+            messagebox.showinfo("✅ Cleared", "Scan history has been cleared.")
+            self.log_status("History cleared")
 
 if __name__ == "__main__":
     app = ScannerApp()

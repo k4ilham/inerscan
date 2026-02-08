@@ -4,3 +4,4 @@ pywin32
 numpy
 pyinstaller
 pyttsx3
+opencv-python-headless
