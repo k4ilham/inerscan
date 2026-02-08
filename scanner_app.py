@@ -304,6 +304,24 @@ class ScannerApp(ctk.CTk):
                                 fg_color=btn_color, command=lambda idx=i: self.select_page(idx))
             btn.pack(pady=5, padx=5, fill="x")
 
+    def delete_current_page(self):
+        if 0 <= self.current_page_index < len(self.pages):
+            del self.pages[self.current_page_index]
+            
+            if not self.pages:
+                # No pages left
+                self.current_page_index = -1
+                self.preview_canvas.delete("all")
+                self.preview_canvas.create_text(250, 300, text="No document scanned.\nClick 'START SCAN' to begin.", fill="gray", font=("Arial", 16), tags="placeholder")
+                self.save_img_btn.configure(state="disabled")
+                self.save_pdf_btn.configure(state="disabled")
+                self.delete_btn.configure(state="disabled")
+                self.update_thumbnails()
+            else:
+                # Select previous or next
+                new_index = max(0, self.current_page_index - 1)
+                self.select_page(new_index)
+
     def select_page(self, index):
         if 0 <= index < len(self.pages):
             self.current_page_index = index
