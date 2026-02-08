@@ -2,3 +2,5 @@ customtkinter
 Pillow
 pywin32
 numpy
+pyinstaller
+pyttsx3
