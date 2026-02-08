@@ -1,13 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
 
 block_cipher = None
 
 a = Analysis(
-    ['scanner_app.py'],
+    ['main.py'],
     pathex=[],
     binaries=[],
     datas=[
-        ('*.py', '.'),
+        ('app', 'app'),
     ],
     hiddenimports=[
         'PIL._tkinter_finder',
@@ -15,7 +16,26 @@ a = Analysis(
         'customtkinter',
         'pyttsx3',
         'win32com.client',
-        'comtypes'
+        'comtypes',
+        'openai',
+        'cv2',
+        'numpy',
+        'app.ui.widgets.animations',
+        'app.ui.widgets.openai_settings_dialog',
+        'app.ui.widgets.ai_chat_window',
+        'app.ui.widgets.text_result_panel',
+        'app.ui.widgets.sidebar_panels',
+        'app.ui.ribbons.scanner_tab',
+        'app.ui.ribbons.editor_tab',
+        'app.ui.ribbons.ai_tab',
+        'app.ui.ribbons.annotate_tab',
+        'app.ui.ribbons.layout_tab',
+        'app.ui.ribbons.library_tab',
+        'app.services.scanner_service',
+        'app.services.image_service',
+        'app.services.db_service',
+        'app.services.guide_service',
+        'app.services.ai_openai_service',
     ],
     hookspath=[],
     hooksconfig={},

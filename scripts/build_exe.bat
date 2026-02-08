@@ -1,19 +1,57 @@
 @echo off
 cd /d "%~dp0.."
-echo Building InerScan Pro...
-echo Ensure PyInstaller is installed: pip install pyinstaller
-
-rmdir /s /q build
-rmdir /s /q dist
-
-pyinstaller --noconfirm --noconsole --onefile ^
-    --name "InerScanPro" ^
-    --hidden-import "PIL._tkinter_finder" ^
-    --collect-all "customtkinter" ^
-    --add-data "README.md;." ^
-    "main.py"
-
+echo ========================================
+echo InerScan Pro - Build Script
+echo ========================================
 echo.
-echo Build Complete!
-echo You can find the executable in the 'dist' folder.
+
+:: Check if virtual environment exists
+if not exist "venv" (
+    echo Creating virtual environment...
+    python -m venv venv
+)
+
+:: Activate virtual environment
+call venv\Scripts\activate.bat
+
+:: Install/upgrade dependencies
+echo Installing dependencies...
+pip install --upgrade pip
+pip install -r requirements.txt
+pip install pyinstaller
+
+:: Clean previous builds
+echo.
+echo Cleaning previous builds...
+if exist "build" rmdir /s /q build
+if exist "dist" rmdir /s /q dist
+
+:: Build executable using spec file
+echo.
+echo Building executable with spec file...
+pyinstaller --clean InerScanPro.spec
+
+:: Check if build succeeded
+if exist "dist\InerScanPro.exe" (
+    echo.
+    echo ========================================
+    echo ✅ Build succeeded!
+    echo ========================================
+    echo.
+    echo Executable location: dist\InerScanPro.exe
+    echo.
+    dir dist\InerScanPro.exe | find "InerScanPro.exe"
+    echo.
+    echo You can now distribute dist\InerScanPro.exe
+    echo.
+) else (
+    echo.
+    echo ========================================
+    echo ❌ Build failed!
+    echo ========================================
+    echo Check the output above for errors.
+    echo.
+    exit /b 1
+)
+
 pause

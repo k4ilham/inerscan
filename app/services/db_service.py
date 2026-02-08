@@ -3,38 +3,51 @@ import os
 
 class DatabaseService:
     def __init__(self, db_name="settings.db"):
-        self.db_name = db_name
+        # Get user's AppData folder for storing database
+        appdata_dir = os.path.join(os.getenv('APPDATA'), 'InerScanPro')
+        
+        # Create directory if it doesn't exist
+        if not os.path.exists(appdata_dir):
+            os.makedirs(appdata_dir)
+        
+        # Full path to database
+        self.db_name = os.path.join(appdata_dir, db_name)
         self.init_db()
 
     def init_db(self):
         """Initialize the database and settings table."""
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
+        try:
+            conn = sqlite3.connect(self.db_name)
+            cursor = conn.cursor()
         
-        # Settings table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS app_settings (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            )
-        ''')
+            # Settings table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                )
+            ''')
         
-        # Scan history table
-        cursor.execute('''
-            CREATE TABLE IF NOT EXISTS scan_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                filename TEXT NOT NULL,
-                filepath TEXT NOT NULL,
-                file_type TEXT,
-                page_count INTEGER,
-                file_size INTEGER,
-                scan_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                notes TEXT
-            )
-        ''')
+            # Scan history table
+            cursor.execute('''
+                CREATE TABLE IF NOT EXISTS scan_history (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    filename TEXT NOT NULL,
+                    filepath TEXT NOT NULL,
+                    file_type TEXT,
+                    page_count INTEGER,
+                    file_size INTEGER,
+                    scan_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    notes TEXT
+                )
+            ''')
         
-        conn.commit()
-        conn.close()
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"Database initialization error: {e}")
+            # Create a fallback in-memory database if file-based fails
+            self.db_name = ":memory:"
 
     def add_scan_history(self, filename, filepath, file_type, page_count, file_size, notes=""):
         """Add a scan to history"""
