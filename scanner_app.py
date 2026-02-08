@@ -5,6 +5,8 @@ import customtkinter as ctk
 from PIL import Image, ImageTk, ImageEnhance, ImageOps
 import win32com.client
 import sys
+import numpy as np
+from tkinter import colorchooser
 
 # Aesthetic Setup - Dark Mode with Cyan Accents
 ctk.set_appearance_mode("Dark")
@@ -25,6 +27,15 @@ class ScannerApp(ctk.CTk):
         self.pages = []
         self.current_page_index = -1
         self.scan_result_path = "temp_scan.png"
+        
+        # Edit States
+        self.cropping_active = False
+        self.crop_start = None
+        self.crop_end = None
+        self.crop_rect_id = None
+        self.tk_image_ref = None # Keep reference to avoid garbage collection
+        self.display_image_ref = None # The resized image shown on canvas
+        self.display_scale = 1.0 # Ratio of display / actual
         
         # Export Variables
         self.output_dir = tk.StringVar(value=os.path.join(os.path.expanduser("~"), "Documents", "Scans"))
@@ -95,7 +106,19 @@ class ScannerApp(ctk.CTk):
         self.cont_slider.set(1.0)
         self.cont_slider.pack(fill="x", pady=(0, 10))
         
-        # Row 4: Mode & Reset
+        # Row 4: Advanced Edits (Crop, BG)
+        adv_frame = ctk.CTkFrame(self.edit_grid, fg_color="transparent")
+        adv_frame.pack(fill="x", pady=5)
+        
+        self.crop_btn = ctk.CTkButton(adv_frame, text="Crop Tool", width=80, command=self.toggle_crop_mode, fg_color="#E76F51", hover_color="#D35400")
+        self.crop_btn.pack(side="left", padx=2, fill="x", expand=True)
+
+        ctk.CTkButton(adv_frame, text="BG Color", width=80, command=self.change_bg_color, fg_color="#2A9D8F", hover_color="#21867A").pack(side="left", padx=2, fill="x", expand=True)
+        
+        self.remove_bg_btn = ctk.CTkButton(self.scroll_content, text="Remove White Background", command=self.remove_white_bg, fg_color="#264653", hover_color="#1D353F")
+        self.remove_bg_btn.pack(fill="x", pady=5)
+        
+        # Row 5: Mode & Reset
         self.gray_switch = ctk.CTkSwitch(self.edit_grid, text="B&W Mode", command=self.toggle_grayscale)
         self.gray_switch.pack(anchor="w", pady=5)
         
@@ -140,9 +163,17 @@ class ScannerApp(ctk.CTk):
         self.delete_btn = ctk.CTkButton(self.right_sidebar, text="Delete Selected Page", fg_color="#E63946", hover_color="#B92B27", command=self.delete_current_page, state="disabled")
         self.delete_btn.grid(row=2, column=0, padx=10, pady=20, sticky="ew")
 
-        # Placeholder / Image Preview
-        self.preview_label = ctk.CTkLabel(self.preview_frame, text="No document scanned.\nClick 'START SCAN' to begin.", font=ctk.CTkFont(size=18), text_color="gray")
-        self.preview_label.grid(row=0, column=0, sticky="nsew")
+        # Canvas for Image Preview (Replaces Label)
+        self.preview_canvas = tk.Canvas(self.preview_frame, bg="#232323", highlightthickness=0)
+        self.preview_canvas.grid(row=0, column=0, sticky="nsew")
+        
+        # Bind Mouse Events for Cropping
+        self.preview_canvas.bind("<Button-1>", self.on_mouse_down)
+        self.preview_canvas.bind("<B1-Motion>", self.on_mouse_drag)
+        self.preview_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
+        
+        # Placeholder Text (drawn on canvas initially)
+        self.preview_canvas.create_text(250, 300, text="No document scanned.\nClick 'START SCAN' to begin.", fill="gray", font=("Arial", 16), tags="placeholder")
 
         # Old Edit Frame Removed
 
@@ -251,11 +282,11 @@ class ScannerApp(ctk.CTk):
         preview_img.thumbnail((new_width, new_height), Image.Resampling.LANCZOS)
         
         # Convert to CTkImage
-        ctk_img = ctk.CTkImage(light_image=preview_img, dark_image=preview_img, size=(new_width, new_height))
+        # ctk_img = ctk.CTkImage(light_image=preview_img, dark_image=preview_img, size=(new_width, new_height))
         
         # Update Label
-        self.preview_label.configure(image=ctk_img, text="")
-        self.preview_label.image = ctk_img  # Keep reference
+        # self.preview_label.configure(image=ctk_img, text="")
+        # self.preview_label.image = ctk_img  # Keep reference
 
     def update_thumbnails(self):
         # Clear existing
@@ -289,22 +320,195 @@ class ScannerApp(ctk.CTk):
             self.show_preview(page['processed'])
             self.update_thumbnails()
             
-    def delete_current_page(self):
-        if 0 <= self.current_page_index < len(self.pages):
-            del self.pages[self.current_page_index]
+            # Reset Crop State
+            self.cancel_crop_mode()
+
+    def show_preview(self, pil_image):
+        """Resizes and displays the image on the Canvas."""
+        # Clear Canvas
+        self.preview_canvas.delete("all")
+        
+        # Get Frame Size
+        frame_width = self.preview_frame.winfo_width()
+        frame_height = self.preview_frame.winfo_height()
+        
+        if frame_width < 50: frame_width = 500
+        if frame_height < 50: frame_height = 600
+        
+        # Resize logic
+        img_ratio = pil_image.width / pil_image.height
+        frame_ratio = frame_width / frame_height
+        
+        if img_ratio > frame_ratio:
+            new_width = frame_width
+            new_height = int(frame_width / img_ratio)
+        else:
+            new_height = frame_height
+            new_width = int(frame_height * img_ratio)
             
-            if not self.pages:
-                # No pages left
-                self.current_page_index = -1
-                self.preview_label.configure(image=None, text="No document scanned.")
-                self.save_img_btn.configure(state="disabled")
-                self.save_pdf_btn.configure(state="disabled")
-                self.delete_btn.configure(state="disabled")
-                self.update_thumbnails()
-            else:
-                # Select previous or next
-                new_index = max(0, self.current_page_index - 1)
-                self.select_page(new_index)
+        self.display_scale = new_width / pil_image.width
+            
+        # Create thumbnail (copy)
+        self.display_image_ref = pil_image.copy()
+        self.display_image_ref.thumbnail((new_width, new_height), Image.Resampling.LANCZOS)
+        
+        # Convert to ImageTk
+        self.tk_image_ref = ImageTk.PhotoImage(self.display_image_ref)
+        
+        # Center Image
+        x_center = frame_width // 2
+        y_center = frame_height // 2
+        
+        self.preview_canvas.create_image(x_center, y_center, image=self.tk_image_ref, anchor="center")
+        self.preview_canvas.config(scrollregion=self.preview_canvas.bbox("all"))
+
+    # --- Crop Logic ---
+    def toggle_crop_mode(self):
+        if self.current_page_index == -1: return
+        
+        if not self.cropping_active:
+            self.cropping_active = True
+            self.crop_btn.configure(text="Cancel Crop", fg_color="#E76F51") # Red
+            self.preview_canvas.config(cursor="crosshair")
+            self.log_status("Crop Mode Active. Drag to select area.")
+        else:
+            self.cancel_crop_mode()
+            
+    def cancel_crop_mode(self):
+        self.cropping_active = False
+        self.crop_btn.configure(text="Crop Tool", fg_color="#E76F51") # Reset color
+        self.preview_canvas.config(cursor="")
+        self.preview_canvas.delete("crop_rect")
+        self.log_status("Ready")
+
+    def on_mouse_down(self, event):
+        if not self.cropping_active: return
+        self.crop_start = (event.x, event.y)
+        if self.crop_rect_id:
+            self.preview_canvas.delete(self.crop_rect_id)
+            
+    def on_mouse_drag(self, event):
+        if not self.cropping_active or not self.crop_start: return
+        
+        if self.crop_rect_id:
+            self.preview_canvas.delete(self.crop_rect_id)
+            
+        self.crop_rect_id = self.preview_canvas.create_rectangle(
+            self.crop_start[0], self.crop_start[1], event.x, event.y,
+            outline="red", width=2, dash=(4, 4), tags="crop_rect"
+        )
+
+    def on_mouse_release(self, event):
+        if not self.cropping_active or not self.crop_start: return
+        
+        self.crop_end = (event.x, event.y)
+        
+        # Confirm Dialog
+        if messagebox.askyesno("Confirm Crop", "Apply this crop?"):
+            self.apply_crop()
+        else:
+            self.preview_canvas.delete("crop_rect")
+
+    def apply_crop(self):
+        if not self.crop_start or not self.crop_end: return
+        
+        # Calculate coordinate in original image space
+        # Canvas Coords (Centered) -> Image Coords
+        # We need to know where the image top-left is drawn
+        frame_width = self.preview_frame.winfo_width()
+        frame_height = self.preview_frame.winfo_height()
+        
+        # Image dimensions on canvas
+        disp_w, disp_h = self.display_image_ref.size
+        
+        # Image top-left on canvas
+        img_x = (frame_width - disp_w) // 2
+        img_y = (frame_height - disp_h) // 2
+        
+        # Selection relative to image
+        x1 = (self.crop_start[0] - img_x) / self.display_scale
+        y1 = (self.crop_start[1] - img_y) / self.display_scale
+        x2 = (self.crop_end[0] - img_x) / self.display_scale
+        y2 = (self.crop_end[1] - img_y) / self.display_scale
+        
+        # Normalize coords
+        left = max(0, min(x1, x2))
+        top = max(0, min(y1, y2))
+        right = min(self.pages[self.current_page_index]['original'].width, max(x1, x2))
+        bottom = min(self.pages[self.current_page_index]['original'].height, max(y1, y2))
+        
+        if right - left < 10 or bottom - top < 10:
+             self.log_status("Crop area too small.")
+             return
+
+        # Crop original and processed
+        box = (left, top, right, bottom)
+        
+        # We crop the *current processed* image to reflect edits properly
+        # But for non-destructive workflow, we usually crop original. 
+        # Here we crop original and re-process.
+        # But wait, cropping is a geometric transform. Rotations are also geometric.
+        # If we crop original, rotation needs to happen after.
+        # It's safer to crop the *current processed state* and set that as new original?
+        # Let's crop the PROCESSED image and set keys to default.
+        
+        cropped_img = self.pages[self.current_page_index]['processed'].crop(box)
+        
+        # Update Page Data
+        self.pages[self.current_page_index]['original'] = cropped_img
+        self.pages[self.current_page_index]['processed'] = cropped_img
+        
+        # Reset Edits since they are baked in now (or try to preserve? Baking is safer for Crop)
+        self.pages[self.current_page_index]['rotation'] = 0
+        self.pages[self.current_page_index]['flip_h'] = False
+        self.pages[self.current_page_index]['flip_v'] = False
+        
+        self.cancel_crop_mode()
+        self.process_image() # Refresh view
+        self.log_status("Image cropped.")
+        
+    # --- Background Logic ---
+    def remove_white_bg(self):
+        if self.current_page_index == -1: return
+        
+        img = self.pages[self.current_page_index]['processed'].convert("RGBA")
+        data = np.array(img)
+        
+        # Threshold for white (e.g., > 200, 200, 200)
+        red, green, blue, alpha = data.T
+        white_areas = (red > 200) & (green > 200) & (blue > 200)
+        data[..., 3][white_areas.T] = 0 # Set alpha to 0
+        
+        new_img = Image.fromarray(data)
+        
+        # Update as new original (destructive edit for simplicity)
+        self.pages[self.current_page_index]['original'] = new_img
+        self.process_image()
+        self.log_status("White background removed.")
+        
+    def change_bg_color(self):
+        if self.current_page_index == -1: return
+        
+        color = colorchooser.askcolor(title="Choose Background Color")
+        if color[1]: # Hex string
+            bg_color = color[0] # RGB tuple
+            
+            img = self.pages[self.current_page_index]['processed'].convert("RGBA")
+            
+            # Create colored background
+            background = Image.new("RGBA", img.size, (int(bg_color[0]), int(bg_color[1]), int(bg_color[2]), 255))
+            
+            # Composite (Image over Background)
+            # If image has no alpha, this does nothing useful unless we removed bg first
+            # But "Change BG" implies we probably just removed it.
+            # If image is solid, this just puts it on top.
+            # So this is mostly useful AFTER remove_white_bg.
+            
+            composite = Image.alpha_composite(background, img)
+            
+            self.pages[self.current_page_index]['original'] = composite.convert("RGB")
+            self.process_image()
+            self.log_status(f"Background changed to {color[1]}")
 
     # --- Image Processing Methods ---
     def rotate(self, angle):
