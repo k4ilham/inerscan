@@ -16,6 +16,8 @@
 📦 **Windows Installer** - Professional Inno Setup installer  
 🚀 **Improved Build System** - Automated build pipeline  
 📚 **Complete Documentation** - Comprehensive guides for users and developers  
+🔧 **Bug Fixes** - Fixed database and scanner permission issues for installed apps  
+💾 **Smart Data Storage** - Database and temp files now stored in user AppData folder  
 
 ---
 
@@ -333,6 +335,31 @@ The application automatically detects WIA-compatible scanners.
 - ✅ Run application as administrator
 - ✅ Restart computer
 
+### Scanner "Access Denied" Error
+**Error:** `WIA.ImageFile: Access is denied`
+
+**Solutions:**
+- ✅ **Run as Administrator** - Right-click InerScanPro.exe → Run as administrator
+- ✅ **Check Scanner Status** - Ensure scanner is powered on and connected
+- ✅ **Close Other Apps** - Close any other scanning software
+- ✅ **Restart WIA Service**:
+  1. Press `Win + R`
+  2. Type `services.msc`
+  3. Find "Windows Image Acquisition (WIA)"
+  4. Right-click → Restart
+- ✅ **Reinstall Scanner Drivers** - Download latest drivers from manufacturer
+- ✅ **Check Permissions** - Ensure your user account has scanner access
+
+### Database Errors
+**Error:** `unable to open database file`
+
+**Solutions:**
+- ✅ Database is now stored in `%APPDATA%\InerScanPro\`
+- ✅ Ensure you have write permissions to AppData folder
+- ✅ Check disk space availability
+- ✅ Run application as administrator if needed
+- ✅ Application will use in-memory database as fallback
+
 ### OpenAI Features Not Working
 - ✅ Verify API key in settings
 - ✅ Check internet connection
@@ -421,7 +448,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 📦 Professional Windows installer
 - 🚀 Improved build system
 - 📚 Complete documentation
-- 🐛 Bug fixes and performance improvements
+- 🐛 Bug fixes:
+  - Fixed database permission issues (now stored in AppData)
+  - Fixed scanner temp file access errors
+  - Improved error messages for scanner issues
+  - Better error handling throughout the application
+- 💾 Smart data storage in user AppData folder
+- 🔧 Enhanced WIA scanner error handling
 
 ### v3.0 (Previous)
 - 🎨 Modern Shadcn-style UI
