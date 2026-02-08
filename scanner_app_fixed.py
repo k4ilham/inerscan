@@ -109,58 +109,12 @@ class ScannerApp(ctk.CTk):
         self.scroll = ctk.CTkScrollableFrame(self.left_card, fg_color="transparent")
         self.scroll.pack(fill="both", expand=True, padx=15, pady=15)
         
-        # Create all sections
+        # Create all sections (we'll show/hide based on tab)
         self.create_scanner_controls()
         self.create_editor_controls()
         self.create_library_controls()
         
-        # Center Preview Card
-        center_card = self._create_card(main, min_width=500)
-        center_card.grid(row=1, column=1, sticky="nsew", padx=5)
-        center_card.grid_rowconfigure(0, weight=1)
-        center_card.grid_columnconfigure(0, weight=1)
-        
-        self.preview_canvas = tk.Canvas(center_card, bg="#FAFBFC", highlightthickness=0)
-        self.preview_canvas.grid(row=0, column=0, sticky="nsew", padx=15, pady=15)
-        self.preview_canvas.bind("<Button-1>", self.on_mouse_down)
-        self.preview_canvas.bind("<B1-Motion>", self.on_mouse_drag)
-        self.preview_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
-        
-        # Right Panel - Pages Card
-        right_card = self._create_card(main, 280)
-        right_card.grid(row=1, column=2, sticky="nsew", padx=(10, 0))
-        right_card.grid_rowconfigure(1, weight=1)
-        
-        header = ctk.CTkFrame(right_card, fg_color="transparent", height=50)
-        header.grid(row=0, column=0, sticky="ew", padx=20, pady=(15, 10))
-        header.grid_propagate(False)
-        
-        ctk.CTkLabel(header, text="📑 Pages", font=("Segoe UI", 16, "bold"),
-                    text_color=COLORS["text"]).pack(side="left")
-        
-        self.page_badge = ctk.CTkLabel(header, text="0", font=("Segoe UI", 11, "bold"),
-                                      fg_color=COLORS["primary"], text_color="white",
-                                      corner_radius=12, width=30, height=24)
-        self.page_badge.pack(side="left", padx=10)
-        
-        self.thumb_scroll = ctk.CTkScrollableFrame(right_card, fg_color="transparent")
-        self.thumb_scroll.grid(row=1, column=0, sticky="nsew", padx=15, pady=(0, 10))
-        
-        self.delete_btn = ctk.CTkButton(right_card, text="🗑️ Delete", command=self.delete_current_page,
-                                       state="disabled", height=45, corner_radius=12,
-                                       fg_color=COLORS["danger"], font=("Segoe UI", 13, "bold"))
-        self.delete_btn.grid(row=2, column=0, padx=20, pady=(0, 20), sticky="ew")
-        
-        # Status Bar
-        status_bar = ctk.CTkFrame(main, fg_color=COLORS["surface"], height=40, corner_radius=15)
-        status_bar.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
-        status_bar.grid_propagate(False)
-        
-        self.status_label = ctk.CTkLabel(status_bar, text="✅ Ready", font=("Segoe UI", 11),
-                                        text_color=COLORS["text_light"], anchor="w")
-        self.status_label.pack(side="left", padx=20)
-        
-        # Show scanner by default
+        # Show only scanner controls by default
         self.show_tab_controls("scanner")
 
     def create_scanner_controls(self):
@@ -419,6 +373,55 @@ class ScannerApp(ctk.CTk):
         ctk.CTkButton(self.scanner_frame, text="🎧 User Guide", command=self.start_interactive_guide,
                      height=40, corner_radius=10, fg_color=COLORS["secondary"],
                      font=("Segoe UI", 12, "bold")).pack(fill="x")
+        
+        # Center Preview Card
+        center_card = self._create_card(main, min_width=500)
+        center_card.grid(row=1, column=1, sticky="nsew", padx=5)
+        center_card.grid_rowconfigure(0, weight=1)
+        center_card.grid_columnconfigure(0, weight=1)
+        
+        self.preview_canvas = tk.Canvas(center_card, bg="#FAFBFC", highlightthickness=0)
+        self.preview_canvas.grid(row=0, column=0, sticky="nsew", padx=15, pady=15)
+        self.preview_canvas.bind("<Button-1>", self.on_mouse_down)
+        self.preview_canvas.bind("<B1-Motion>", self.on_mouse_drag)
+        self.preview_canvas.bind("<ButtonRelease-1>", self.on_mouse_release)
+        self.preview_canvas.create_text(400, 300, text="📄 No Document\n\nClick 'Start Scan' to begin",
+                                       fill=COLORS["text_lighter"], font=("Segoe UI", 18), 
+                                       tags="placeholder", justify="center")
+        
+        # Right Panel - Pages Card
+        right_card = self._create_card(main, 280)
+        right_card.grid(row=1, column=2, sticky="nsew", padx=(10, 0))
+        right_card.grid_rowconfigure(1, weight=1)
+        
+        header = ctk.CTkFrame(right_card, fg_color="transparent", height=50)
+        header.grid(row=0, column=0, sticky="ew", padx=20, pady=(15, 10))
+        header.grid_propagate(False)
+        
+        ctk.CTkLabel(header, text="📑 Pages", font=("Segoe UI", 16, "bold"),
+                    text_color=COLORS["text"]).pack(side="left")
+        
+        self.page_badge = ctk.CTkLabel(header, text="0", font=("Segoe UI", 11, "bold"),
+                                      fg_color=COLORS["primary"], text_color="white",
+                                      corner_radius=12, width=30, height=24)
+        self.page_badge.pack(side="left", padx=10)
+        
+        self.thumb_self.scanner_frame = ctk.CTkScrollableFrame(right_card, fg_color="transparent")
+        self.thumb_self.scanner_frame.grid(row=1, column=0, sticky="nsew", padx=15, pady=(0, 10))
+        
+        self.delete_btn = ctk.CTkButton(right_card, text="🗑️ Delete", command=self.delete_current_page,
+                                       state="disabled", height=45, corner_radius=12,
+                                       fg_color=COLORS["danger"], font=("Segoe UI", 13, "bold"))
+        self.delete_btn.grid(row=2, column=0, padx=20, pady=(0, 20), sticky="ew")
+        
+        # Status Bar
+        status = ctk.CTkFrame(main, fg_color=COLORS["surface"], height=40, corner_radius=15)
+        status.grid(row=2, column=0, columnspan=3, sticky="ew", pady=(10, 0))
+        status.grid_propagate(False)
+        
+        self.status_label = ctk.CTkLabel(status, text="✅ Ready", font=("Segoe UI", 11),
+                                        text_color=COLORS["text_light"], anchor="w")
+        self.status_label.pack(side="left", padx=20)
 
     def _create_card(self, parent, width=300, min_width=None):
         """Create a card with shadow effect"""
@@ -459,184 +462,6 @@ class ScannerApp(ctk.CTk):
                             border_width=1, border_color=COLORS["border"])
         entry.pack(fill="x", pady=(0, 10))
 
-    # --- Core Logic & Page Management ---
-    
-    def select_page(self, index):
-        """Select and display a page"""
-        if 0 <= index < len(self.pages):
-            self.current_page_index = index
-            self.display_page(self.pages[index]['processed'])
-            self.update_thumbnails()
-            
-            # Update UI controls state
-            self.save_img_btn.configure(state="normal")
-            self.delete_btn.configure(state="normal")
-            
-            # Sync sliders if in editor tab
-            if self.current_tab == "editor":
-                page = self.pages[index]
-                if hasattr(self, 'bright_slider_editor'):
-                    self.bright_slider_editor.set(page['brightness'])
-                if hasattr(self, 'cont_slider_editor'):
-                    self.cont_slider_editor.set(page['contrast'])
-                if hasattr(self, 'gray_switch_editor'):
-                    if page['grayscale']: self.gray_switch_editor.select()
-                    else: self.gray_switch_editor.deselect()
-
-    def display_page(self, pil_image):
-        """Display image on canvas with proper scaling"""
-        if pil_image is None: return
-        
-        # Calculate scale to fit canvas
-        canvas_w = self.preview_canvas.winfo_width()
-        canvas_h = self.preview_canvas.winfo_height()
-        
-        if canvas_w < 100: canvas_w = 800
-        if canvas_h < 100: canvas_h = 600
-        
-        img_w, img_h = pil_image.size
-        scale = min(canvas_w / img_w, canvas_h / img_h) * 0.95
-        self.display_scale = scale
-        
-        new_size = (int(img_w * scale), int(img_h * scale))
-        display_img = pil_image.resize(new_size, Image.Resampling.LANCZOS)
-        
-        self.tk_image_ref = ImageTk.PhotoImage(display_img)
-        self.preview_canvas.delete("all")
-        self.preview_canvas.create_image(canvas_w/2, canvas_h/2, image=self.tk_image_ref)
-        
-        # Re-add guide text if needed
-        if not self.pages:
-            self.preview_canvas.create_text(canvas_w/2, canvas_h/2, text="📄 No Document\n\nClick 'Start Scan' to begin",
-                                          fill=COLORS["text_lighter"], font=("Segoe UI", 18), 
-                                          tags="placeholder", justify="center")
-
-    def update_thumbnails(self):
-        """Update the page thumbnails in the right sidebar"""
-        # Clear existing
-        for widget in self.thumb_scroll.winfo_children():
-            widget.destroy()
-            
-        for i, page in enumerate(self.pages):
-            self._create_thumbnail(i, page['processed'])
-
-    def _create_thumbnail(self, index, pil_image):
-        """Create a single thumbnail entry"""
-        is_selected = (index == self.current_page_index)
-        
-        frame = ctk.CTkFrame(self.thumb_scroll, fg_color=COLORS["primary"] if is_selected else "transparent",
-                            corner_radius=10, cursor="hand2")
-        frame.pack(fill="x", pady=5, padx=5)
-        
-        # Resize for thumbnail
-        thumb_img = pil_image.copy()
-        thumb_img.thumbnail((200, 150))
-        tk_thumb = ImageTk.PhotoImage(thumb_img)
-        
-        lbl_img = tk.Label(frame, image=tk_thumb, bg=COLORS["primary"] if is_selected else COLORS["surface"])
-        lbl_img.image = tk_thumb # Keep reference
-        lbl_img.pack(pady=5, padx=5)
-        
-        lbl_txt = ctk.CTkLabel(frame, text=f"Page {index + 1}", 
-                              text_color="white" if is_selected else COLORS["text"],
-                              font=("Segoe UI", 11, "bold" if is_selected else "normal"))
-        lbl_txt.pack(pady=(0, 5))
-        
-        # Bind click events
-        for w in [frame, lbl_img, lbl_txt]:
-            w.bind("<Button-1>", lambda e, idx=index: self.select_page(idx))
-
-    def update_idletasks_and_preview(self):
-        """Helper to force update and refresh display"""
-        self.update_idletasks()
-        if self.current_page_index != -1:
-            self.display_page(self.pages[self.current_page_index]['processed'])
-
-    # --- Image Modification Logic ---
-
-    def apply_modifications(self, index):
-        """Apply all adjustments to the original image"""
-        if not (0 <= index < len(self.pages)): return
-        
-        page = self.pages[index]
-        img = page['original'].copy()
-        
-        # 1. Rotate
-        if page['rotation'] != 0:
-            img = img.rotate(page['rotation'], expand=True)
-            
-        # 2. Flip
-        if page['flip_h']: img = img.transpose(Image.FLIP_LEFT_RIGHT)
-        if page['flip_v']: img = img.transpose(Image.FLIP_TOP_BOTTOM)
-        
-        # 3. Brightness/Contrast
-        if page['brightness'] != 1.0:
-            img = ImageEnhance.Brightness(img).enhance(page['brightness'])
-        if page['contrast'] != 1.0:
-            img = ImageEnhance.Contrast(img).enhance(page['contrast'])
-            
-        # 4. Grayscale
-        if page['grayscale']:
-            img = img.convert('L')
-            
-        page['processed'] = img
-        self.display_page(img)
-        self.update_thumbnails()
-
-    def rotate(self, angle):
-        if self.current_page_index == -1: return
-        self.pages[self.current_page_index]['rotation'] = (self.pages[self.current_page_index]['rotation'] - angle) % 360
-        self.apply_modifications(self.current_page_index)
-
-    def toggle_flip_h(self):
-        if self.current_page_index == -1: return
-        self.pages[self.current_page_index]['flip_h'] = not self.pages[self.current_page_index]['flip_h']
-        self.apply_modifications(self.current_page_index)
-
-    def toggle_flip_v(self):
-        if self.current_page_index == -1: return
-        self.pages[self.current_page_index]['flip_v'] = not self.pages[self.current_page_index]['flip_v']
-        self.apply_modifications(self.current_page_index)
-
-    def update_brightness(self, val):
-        if self.current_page_index == -1: return
-        self.pages[self.current_page_index]['brightness'] = float(val)
-        self.apply_modifications(self.current_page_index)
-
-    def update_contrast(self, val):
-        if self.current_page_index == -1: return
-        self.pages[self.current_page_index]['contrast'] = float(val)
-        self.apply_modifications(self.current_page_index)
-
-    def toggle_grayscale(self):
-        if self.current_page_index == -1: return
-        # Handle switch state
-        state = False
-        if hasattr(self, 'gray_switch'): state = self.gray_switch.get()
-        elif hasattr(self, 'gray_switch_editor'): state = self.gray_switch_editor.get()
-        
-        self.pages[self.current_page_index]['grayscale'] = state
-        self.apply_modifications(self.current_page_index)
-
-    def delete_current_page(self):
-        if self.current_page_index == -1: return
-        if messagebox.askyesno("Delete", "Delete current page?"):
-            self.pages.pop(self.current_page_index)
-            if not self.pages:
-                self.current_page_index = -1
-                self.preview_canvas.delete("all")
-                self.save_img_btn.configure(state="disabled")
-                self.save_pdf_btn.configure(state="disabled")
-                self.delete_btn.configure(state="disabled")
-                self.page_badge.configure(text="0")
-            else:
-                self.select_page(max(0, self.current_page_index - 1))
-            self.update_thumbnails()
-            self.update_library_stats()
-            self.page_badge.configure(text=str(len(self.pages)))
-
-
-
     def switch_tab(self, tab_id):
         """Switch between Scanner, Editor, and Library tabs"""
         self.current_tab = tab_id
@@ -648,459 +473,10 @@ class ScannerApp(ctk.CTk):
             else:
                 btn.configure(fg_color="transparent", text_color=COLORS["text_light"])
         
-        # Switch actual UI controls
+        # Switch UI controls
         self.show_tab_controls(tab_id)
 
-    def create_editor_controls(self):
-        """Create Editor tab controls - focused on editing only"""
-        self.editor_frame = ctk.CTkFrame(self.scroll, fg_color="transparent")
-        
-        ctk.CTkLabel(self.editor_frame, text="🎨 Editor Mode", 
-                    font=("Segoe UI", 18, "bold"), text_color=COLORS["primary"]).pack(pady=(0, 10))
-        
-        ctk.CTkLabel(self.editor_frame, text="Select a page from the right sidebar to edit",
-                    font=("Segoe UI", 11), text_color=COLORS["text_light"]).pack(pady=(0, 20))
-        
-        # Quick Tools
-        self._section_header(self.editor_frame, "✨ Quick Tools")
-        
-        quick_tools = [
-            ("↺ Rotate Left", lambda: self.rotate(-90)),
-            ("↻ Rotate Right", lambda: self.rotate(90)),
-            ("↔ Flip H", self.toggle_flip_h),
-            ("↕ Flip V", self.toggle_flip_v)
-        ]
-        
-        tool_grid = ctk.CTkFrame(self.editor_frame, fg_color="transparent")
-        tool_grid.pack(fill="x", pady=(0, 15))
-        tool_grid.grid_columnconfigure((0, 1), weight=1)
-        
-        for i, (text, cmd) in enumerate(quick_tools):
-            btn = ctk.CTkButton(tool_grid, text=text, command=cmd, height=40,
-                               fg_color=COLORS["bg_gradient_end"], text_color=COLORS["text"],
-                               hover_color=COLORS["border"], font=("Segoe UI", 12), corner_radius=10)
-            btn.grid(row=i//2, column=i%2, padx=3, pady=3, sticky="ew")
-        
-        # Adjustments
-        self._section_header(self.editor_frame, "🎭 Adjustments")
-        self._slider_control(self.editor_frame, "💡 Brightness", self.update_brightness)
-        self.bright_slider_editor = self.editor_frame.winfo_children()[-1]
-        self.bright_slider_editor.set(1.0)
-        
-        self._slider_control(self.editor_frame, "🎭 Contrast", self.update_contrast)
-        self.cont_slider_editor = self.editor_frame.winfo_children()[-1]
-        self.cont_slider_editor.set(1.0)
-        
-        self.gray_switch_editor = ctk.CTkSwitch(self.editor_frame, text="⚫ Black & White",
-                                               command=self.toggle_grayscale, font=("Segoe UI", 12))
-        self.gray_switch_editor.pack(anchor="w", pady=(10, 20))
-        
-        # Advanced
-        self._section_header(self.editor_frame, "🔧 Advanced Tools")
-        
-        adv_actions = [
-            ("📐 Auto-Straighten", self.auto_straighten, "#06B6D4"),
-            ("✂️ Crop Tool", self.toggle_crop_mode, COLORS["warning"]),
-            ("🧹 Remove Background", self.remove_white_bg, COLORS["secondary"]),
-            ("📐 Auto Crop", self.perform_auto_crop, COLORS["success"])
-        ]
-        
-        for text, cmd, color in adv_actions:
-            self._action_button(self.editor_frame, text, cmd, color)
-
-    def create_library_controls(self):
-        """Create Library tab controls - manage all scanned pages"""
-        self.library_frame = ctk.CTkFrame(self.scroll, fg_color="transparent")
-        
-        ctk.CTkLabel(self.library_frame, text="📚 Library", 
-                    font=("Segoe UI", 18, "bold"), text_color=COLORS["primary"]).pack(pady=(0, 10))
-        
-        # Stats
-        self.lib_stats_label = ctk.CTkLabel(self.library_frame, 
-                                           text="No pages yet",
-                                           font=("Segoe UI", 13), 
-                                           text_color=COLORS["text"])
-        self.lib_stats_label.pack(pady=(0, 20))
-        
-        # Actions
-        self._section_header(self.library_frame, "📋 Manage Pages")
-        
-        lib_actions = [
-            ("➕ Add New Scan", self.perform_scan),
-            ("🔄 Refresh Library", self.update_library_stats),
-            ("🗑️ Delete Current", self.delete_current_page),
-            ("🧹 Clear All", self.clear_all_pages)
-        ]
-        
-        for text, cmd in lib_actions:
-            ctk.CTkButton(self.library_frame, text=text, command=cmd, height=40, corner_radius=10,
-                         fg_color=COLORS["primary"] if "Add" in text else "transparent",
-                         border_width=2 if "Add" not in text else 0,
-                         border_color=COLORS["border"],
-                         text_color="white" if "Add" in text else COLORS["text"],
-                         hover_color=COLORS["primary_light"],
-                         font=("Segoe UI", 12, "bold" if "Add" in text else "normal")).pack(fill="x", pady=3)
-        
-        # Export Section
-        self._section_header(self.library_frame, "💾 Export Library")
-        
-        self._input_field(self.library_frame, "Filename", self.filename_prefix)
-        self._input_field(self.library_frame, "Location", self.output_dir)
-        
-        ctk.CTkButton(self.library_frame, text="📁 Browse...", command=self.browse_folder, 
-                     height=36, fg_color="transparent", border_width=2, 
-                     border_color=COLORS["border"], text_color=COLORS["text"],
-                     hover_color=COLORS["bg_gradient_end"], corner_radius=10,
-                     font=("Segoe UI", 11)).pack(fill="x", pady=(0, 15))
-        
-        self.save_all_btn = ctk.CTkButton(self.library_frame, text="📄 Export All as PDF",
-                                         command=self.save_as_pdf, state="disabled",
-                                         height=45, corner_radius=12, fg_color=COLORS["primary"],
-                                         font=("Segoe UI", 13, "bold"))
-        self.save_all_btn.pack(fill="x", pady=3)
-
-    def show_tab_controls(self, tab_id):
-        """Show/hide appropriate controls based on selected tab"""
-        # Hide all frames first
-        self.scanner_frame.pack_forget()
-        self.editor_frame.pack_forget()
-        self.library_frame.pack_forget()
-        
-        # Show selected frame
-        if tab_id == "scanner":
-            self.scanner_frame.pack(fill="both", expand=True)
-        elif tab_id == "editor":
-            self.editor_frame.pack(fill="both", expand=True)
-            # Sync sliders with current page
-            if self.current_page_index != -1:
-                page = self.pages[self.current_page_index]
-                if hasattr(self, 'bright_slider_editor'):
-                    self.bright_slider_editor.set(page['brightness'])
-                if hasattr(self, 'cont_slider_editor'):
-                    self.cont_slider_editor.set(page['contrast'])
-                if hasattr(self, 'gray_switch_editor'):
-                    if page['grayscale']:
-                        self.gray_switch_editor.select()
-                    else:
-                        self.gray_switch_editor.deselect()
-        elif tab_id == "library":
-            self.library_frame.pack(fill="both", expand=True)
-            self.update_library_stats()
-
-    def update_library_stats(self):
-        """Update library statistics"""
-        if hasattr(self, 'lib_stats_label'):
-            count = len(self.pages)
-            if count == 0:
-                self.lib_stats_label.configure(text="No pages in library")
-                if hasattr(self, 'save_all_btn'):
-                    self.save_all_btn.configure(state="disabled")
-            else:
-                self.lib_stats_label.configure(text=f"📄 {count} page(s) in library")
-                if hasattr(self, 'save_all_btn'):
-                    self.save_all_btn.configure(state="normal")
-
-    def clear_all_pages(self):
-        """Clear all scanned pages"""
-        if not self.pages:
-            messagebox.showinfo("Empty", "No pages to clear")
-            return
-        
-        if messagebox.askyesno("Clear All", f"Delete all {len(self.pages)} page(s)?\n\nThis cannot be undone!"):
-            self.pages = []
-            self.current_page_index = -1
-            self.preview_canvas.delete("all")
-            self.preview_canvas.create_text(400, 300, text="📄 Library Cleared",
-                                          fill=COLORS["text_lighter"], font=("Segoe UI", 18))
-            self.update_thumbnails()
-            self.update_library_stats()
-            self.page_badge.configure(text="0")
-            self.save_img_btn.configure(state="disabled")
-            self.save_pdf_btn.configure(state="disabled")
-            self.delete_btn.configure(state="disabled")
-            messagebox.showinfo("✅ Cleared", "All pages have been deleted")
-
-    # --- Event Handlers ---
-    
-    def stop_batch_scan(self):
-        """Stop batch scanning mode"""
-        self.batch_scanning = False
-        self.batch_scan_btn.configure(text="📚 Batch Scan", fg_color="#10B981")
-        self.scan_btn.configure(state="normal")
-        self.batch_status.configure(text="")
-        self.log_status("Batch scan stopped")
-
-    # --- Watermark & Advanced Tools ---
-
-    def on_watermark_template_change(self, value):
-        if value == "Custom...":
-            dialog = ctk.CTkInputDialog(text="Enter custom watermark text:", title="Custom Watermark")
-            custom_text = dialog.get_input()
-            if custom_text:
-                # Add to values if not exists
-                current_values = list(self.watermark_text._get_values())
-                if custom_text not in current_values:
-                    self.watermark_text.set(custom_text)
-            else:
-                self.watermark_text.set("COPY")
-
-    def update_watermark_preview(self, val):
-        # We don't do real-time watermark preview as it's slow
-        # but we could add a temporary overlay on canvas
-        pass
-
-    # --- Cropping & Mouse Events ---
-
-    def toggle_crop_mode(self):
-        if self.current_page_index == -1: return
-        self.cropping_active = not self.cropping_active
-        if self.cropping_active:
-            self.preview_canvas.configure(cursor="cross")
-            self.log_status("Crop Mode Active: Click and drag on image")
-        else:
-            self.preview_canvas.configure(cursor="")
-            self.preview_canvas.delete("crop_rect")
-            self.log_status("Crop Mode Disabled")
-
-    def on_mouse_down(self, event):
-        if not self.cropping_active: return
-        self.crop_start = (event.x, event.y)
-        self.preview_canvas.delete("crop_rect")
-
-    def on_mouse_drag(self, event):
-        if not self.cropping_active or not self.crop_start: return
-        self.crop_end = (event.x, event.y)
-        self.preview_canvas.delete("crop_rect")
-        self.preview_canvas.create_rectangle(self.crop_start[0], self.crop_start[1],
-                                            event.x, event.y, outline="red", width=2, tags="crop_rect")
-
-    def on_mouse_release(self, event):
-        if not self.cropping_active or not self.crop_start: return
-        self.crop_end = (event.x, event.y)
-        
-        if messagebox.askyesno("Confirm Crop", "Crop to selected area?"):
-            self.perform_crop()
-        
-        self.crop_start = None
-        self.preview_canvas.delete("crop_rect")
-
-    def perform_crop(self):
-        if self.current_page_index == -1: return
-        
-        # Calculate crop area in image coordinates
-        canvas_w = self.preview_canvas.winfo_width()
-        canvas_h = self.preview_canvas.winfo_height()
-        
-        img = self.pages[self.current_page_index]['processed']
-        img_w, img_h = img.size
-        
-        # Calculate offsets (since image is centered)
-        display_w = img_w * self.display_scale
-        display_h = img_h * self.display_scale
-        offset_x = (canvas_w - display_w) / 2
-        offset_y = (canvas_h - display_h) / 2
-        
-        # Normalize coordinates
-        x1 = (min(self.crop_start[0], self.crop_end[0]) - offset_x) / self.display_scale
-        y1 = (min(self.crop_start[1], self.crop_end[1]) - offset_y) / self.display_scale
-        x2 = (max(self.crop_start[0], self.crop_end[0]) - offset_x) / self.display_scale
-        y2 = (max(self.crop_start[1], self.crop_end[1]) - offset_y) / self.display_scale
-        
-        # Clamp to image bounds
-        x1, y1 = max(0, x1), max(0, y1)
-        x2, y2 = min(img_w, x2), min(img_h, y2)
-        
-        if x2 - x1 < 10 or y2 - y1 < 10:
-            messagebox.showwarning("Too Small", "Selected area is too small")
-            return
-            
-        cropped = img.crop((int(x1), int(y1), int(x2), int(y2)))
-        
-        # Update as original
-        self.pages[self.current_page_index]['original'] = cropped.copy()
-        self.pages[self.current_page_index]['processed'] = cropped.copy()
-        self.pages[self.current_page_index]['rotation'] = 0
-        self.pages[self.current_page_index]['brightness'] = 1.0
-        self.pages[self.current_page_index]['contrast'] = 1.0
-        
-        self.display_page(cropped)
-        self.update_thumbnails()
-        self.toggle_crop_mode() # Deactivate
-
-    def perform_auto_crop(self):
-        if self.current_page_index == -1: return
-        self.log_status("Auto-cropping...")
-        img = self.pages[self.current_page_index]['processed']
-        cropped = ImageProcessor.auto_crop(img)
-        self.pages[self.current_page_index]['original'] = cropped.copy()
-        self.pages[self.current_page_index]['processed'] = cropped.copy()
-        self.display_page(cropped)
-        self.update_thumbnails()
-        self.log_status("Auto-crop complete")
-
-    def remove_white_bg(self):
-        if self.current_page_index == -1: return
-        self.log_status("Removing white background...")
-        img = self.pages[self.current_page_index]['processed']
-        processed = ImageProcessor.remove_background(img)
-        self.pages[self.current_page_index]['processed'] = processed
-        self.display_page(processed)
-        self.update_thumbnails()
-        self.log_status("Background removed")
-
-    def auto_straighten(self):
-        """AI Auto-Straighten and Clean"""
-        if self.current_page_index == -1: return
-        
-        res = messagebox.askyesnocancel("Auto-Straighten", 
-                                       "Do you want to apply full cleaning?\n\nYes: Straighten + Clean + Crop\nNo: Straighten only\nCancel: Abort")
-        if res is None: return
-        
-        self.log_status("AI Analysis in progress...")
-        current_img = self.pages[self.current_page_index]['processed']
-        
-        try:
-            if res: # Full Clean
-                straightened = ImageProcessor.auto_straighten_and_crop(current_img)
-                method = "Straighten + Clean"
-            else: # Basic Straighten
-                angle = ImageProcessor.detect_angle(current_img)
-                straightened = current_img.rotate(angle, expand=True, fillcolor=(255, 255, 255))
-                method = "Basic Straighten"
-                
-            self.pages[self.current_page_index]['original'] = straightened.copy()
-            self.pages[self.current_page_index]['processed'] = straightened.copy()
-            self.display_page(straightened)
-            self.update_thumbnails()
-            self.log_status(f"AI Success: {method} applied")
-        except Exception as e:
-            messagebox.showerror("AI Error", f"Could not analyze document: {e}")
-            self.log_status("AI Analysis failed")
-
-
-    def apply_watermark(self):
-        if self.current_page_index == -1: return
-        
-        text = self.watermark_text.get()
-        pos = self.watermark_position.get()
-        opacity = int(self.watermark_opacity_slider.get() * 255)
-        
-        self.log_status("Applying watermark...")
-        
-        current_img = self.pages[self.current_page_index]['processed']
-        watermarked = ImageProcessor.add_watermark(current_img, text, pos, opacity)
-        
-        # In this app, watermarks are applied to 'processed' and then
-        # effectively become the new 'original' for further modifications
-        # or we just update processed directly.
-        self.pages[self.current_page_index]['processed'] = watermarked
-        self.display_page(watermarked)
-        self.update_thumbnails()
-        self.log_status(f"Watermark '{text}' applied")
-
-    # --- Paper Size & Layout Tools ---
-
-    def on_paper_size_change(self, value):
-        if value == "Custom...":
-            dialog = ctk.CTkInputDialog(text="Enter width x height in mm (e.g. 210x297):", title="Custom Size")
-            result = dialog.get_input()
-            if result and 'x' in result:
-                try:
-                    w, h = map(int, result.split('x'))
-                    # Convert mm to pixels at 300 DPI (approx)
-                    px_w, px_h = int(w * 11.81), int(h * 11.81)
-                    self.paper_sizes[result] = (px_w, px_h)
-                    # Update option menu values
-                    # self.size_menu.configure(values=list(self.paper_sizes.keys()))
-                    self.paper_size_var.set(result)
-                except: pass
-
-    def resize_to_paper_size(self):
-        if self.current_page_index == -1: return
-        
-        target_size = self.paper_sizes.get(self.paper_size_var.get())
-        if not target_size: return
-        
-        method = messagebox.askyesno("Resize Method", 
-                                   "Fit to page (maintain aspect)?\n\nYes: Fit (may have white borders)\nNo: Fill/Crop to center")
-        
-        self.log_status("Resizing...")
-        current_img = self.pages[self.current_page_index]['processed']
-        
-        if method: # Fit
-            resized = ImageProcessor.resize_to_fit(current_img, target_size)
-        else: # Fill/Crop
-            resized = ImageProcessor.resize_to_fill(current_img, target_size)
-            
-        self.pages[self.current_page_index]['processed'] = resized
-        self.display_page(resized)
-        self.update_thumbnails()
-        self.log_status(f"Resized to {self.paper_size_var.get()}")
-
-    def split_current_page(self):
-        if self.current_page_index == -1: return
-        
-        self.log_status("Splitting page...")
-        img = self.pages[self.current_page_index]['processed']
-        left, right = ImageProcessor.split_page_lr(img)
-        
-        # Replace current with left, add right after it
-        self.pages[self.current_page_index]['processed'] = left
-        self.pages[self.current_page_index]['original'] = left.copy()
-        
-        new_page = {
-            'original': right.copy(), 'processed': right.copy(),
-            'rotation': 0, 'flip_h': False, 'flip_v': False,
-            'brightness': 1.0, 'contrast': 1.0, 'grayscale': False
-        }
-        self.pages.insert(self.current_page_index + 1, new_page)
-        
-        self.select_page(self.current_page_index)
-        self.log_status("Page split into two")
-
-    def reverse_pages(self):
-        if not self.pages: return
-        self.pages.reverse()
-        self.select_page(0)
-        self.log_status("Page order reversed")
-
-    def interleave_pages(self):
-        if len(self.pages) < 2: return
-        
-        dialog = ctk.CTkInputDialog(text="Enter the number of pages in the first stack:", title="Duplex Interleave")
-        val = dialog.get_input()
-        if not val: return
-        
-        try:
-            split_at = int(val)
-            self.pages = ImageProcessor.interleave_stacks(self.pages, split_at)
-            self.select_page(0)
-            self.log_status("Stacks interleaved")
-        except Exception as e:
-            messagebox.showerror("Error", str(e))
-
-    def create_collage_grid(self):
-        if not self.pages: return
-        
-        layout = self.grid_layout_var.get()
-        cols, rows = map(int, layout.split('x'))
-        
-        self.log_status(f"Creating {layout} grid...")
-        
-        images = [p['processed'] for p in self.pages]
-        grid_img = ImageProcessor.create_photo_grid(images, (cols, rows))
-        
-        # Add grid as a new page
-        new_page = {
-            'original': grid_img.copy(), 'processed': grid_img.copy(),
-            'rotation': 0, 'flip_h': False, 'flip_v': False,
-            'brightness': 1.0, 'contrast': 1.0, 'grayscale': False
-        }
-        self.pages.append(new_page)
-        self.select_page(len(self.pages) - 1)
-        self.log_status(f"Collage {layout} created")
-
-    # --- Event Handlers ---
+    # Event Handlers (keeping existing logic)
     def log_status(self, msg):
         self.status_label.configure(text=f"ℹ️ {msg}")
         self.update_idletasks()
@@ -1508,7 +884,7 @@ class ScannerApp(ctk.CTk):
         self.preview_canvas.create_image(fw//2, fh//2, image=self.tk_image_ref, anchor="center")
 
     def update_thumbnails(self):
-        for w in self.thumb_scroll.winfo_children(): w.destroy()
+        for w in self.thumb_self.scanner_frame.winfo_children(): w.destroy()
         for i, page in enumerate(self.pages):
             thumb = page['processed'].copy()
             thumb.thumbnail((220, 280))
@@ -1518,7 +894,7 @@ class ScannerApp(ctk.CTk):
             is_selected = (i == self.current_page_index)
             
             # Card for thumbnail
-            card = ctk.CTkFrame(self.thumb_scroll, fg_color=COLORS["surface" if not is_selected else "primary"],
+            card = ctk.CTkFrame(self.thumb_self.scanner_frame, fg_color=COLORS["surface" if not is_selected else "primary"],
                                corner_radius=12, border_width=2,
                                border_color=COLORS["primary"] if is_selected else COLORS["border"])
             card.pack(pady=8, padx=5, fill="x")
